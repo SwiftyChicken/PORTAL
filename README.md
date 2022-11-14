@@ -17,15 +17,15 @@ x86 assembly remake of Portal Prelude on the TI-84
 		* Draw-adt (enkel background tekenen)
 
 
-Main-adt:	Keyb handler, gameloop, levels oproepen\  
-Maze-adt: 	Vertaalt file naar matrix gevuld met objecten\
-Level-adt: 	Collision, portals\
-Portal-adt: 	Position-adt, direction\
-Position-adt: 	Snelheid, versnelling, x- en y-coördinaten\
-Bullet-adt:	Stuurt msg naar level-adt, position-adt\
-Character-adt:	Position-adt\
-Wall-adt:	Position-adt\	
-Draw-adt:	Sprites tekenen voor elk object
+Main-adt:	Keyb handler, gameloop, levels oproepen   
+Maze-adt: 	Vertaalt file naar matrix gevuld met objecten   
+Level-adt: 	Collision, portals   
+Portal-adt: 	Position-adt, direction   
+Position-adt: 	Snelheid, versnelling, x- en y-coördinaten   
+Bullet-adt:	Stuurt msg naar level-adt, position-adt   
+Character-adt:	Position-adt   
+Wall-adt:	Position-adt   
+Draw-adt:	Sprites tekenen voor elk object   
 
 
 ### Fase 2: Files inlezen, collision
