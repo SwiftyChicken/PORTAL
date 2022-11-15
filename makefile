@@ -3,8 +3,8 @@
 # =============================================================================
 
 # Settings - Edit the names of the object and executable files.
-objects1 = main.obj
-dest = main.exe
+objects1 = draw.obj
+dest = draw.exe
 
 # =============================================================================
 # Do NOT edit this section, unless you know what you are doing.

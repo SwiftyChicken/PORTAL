@@ -14,8 +14,9 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
 ; compile-time constants (with macros)
 VMEMADR EQU 0A0000h	; video memory address
-SCRWIDTH EQU 320	; screen witdth
-SCRHEIGHT EQU 200	; screen height
+SCRWIDTH EQU 320		; screen witdth
+SCRHEIGHT EQU 200		; screen height
+BLKDIM EQU 20 			; screen partitions/block is 20*20px
 
 ; -------------------------------------------------------------------
 CODESEG
@@ -25,11 +26,12 @@ PROC setVideoMode
 ARG @@videoMode:byte
 USES eax
 
-movzx ax, [@@videoMode] ; mov met zero extending, kleiner arg in groter reg
+movzx ax, [@@videoMode] 
 int 10h
 
 	ret
 ENDP setVideoMode
+
 
 PROC drawPixel
 USES edi, eax
@@ -43,27 +45,52 @@ MOV [EDI], AL       ; change pixel at column 10 of row 2
 ENDP drawPixel
 
 
-; Set the video mode
-PROC setVideoMode
-ARG @@videoMode:byte
-USES eax
+; Fill the background (for mode 13h)
+PROC fillBackground
+	ARG @@color:dword
+	USES eax, edi, ecx
 
-movzx ax, [@@videoMode] ; mov met zero extending, kleiner arg in groter reg
-int 10h
-
-	ret
-ENDP setVideoMode
-
-PROC drawPixel
-USES edi, eax
-
-MOV EDI, 0A0000H    ; frame buffer address
-ADD EDI, 320*2 + 10 ; add the appropriate offset
-MOV AL, 15          ; index in the colour palette
-MOV [EDI], AL       ; change pixel at column 10 of row 2
+mov eax, [@@color]
+mov edi, VMEMADR 							; access video memory
+mov ecx, SCRWIDTH * SCRHEIGHT ; amount of pixels on screen 
+rep stosb
 
 	ret
-ENDP drawPixel
+ENDP fillBackground
+
+
+PROC drawSprite
+	ARG @@sprite:dword, @@x0:word, @@y0:word
+	USES eax, ebx, ecx, edx, edi, esi
+
+; calculate top coord
+movzx eax, [@@y0]
+mov edx, SCRWIDTH
+mul edx
+add ax, [@@x0]
+
+; top coord on screen
+mov edi, VMEMADR
+add edi, eax
+
+mov ecx, BLKDIM	; loop counter
+mov edx, ecx		; store for later reference
+mov esi, [@@sprite]
+cld
+
+@@printRow:
+push ecx					; store loop counter (for columns)
+mov ecx, edx 			; reset loop counter (for row)
+rep movsb
+
+sub edi, edx 			; reset to leftmost coord (carriage return)
+add edi, SCRWIDTH	; next row (newline)
+pop ecx
+loop @@printRow
+
+	ret
+ENDP drawSprite
+
 
 ; Wait for a specific keystroke.
 PROC waitForSpecificKeystroke
@@ -73,15 +100,16 @@ USES eax
 @@repeat:
 mov ah, 01h
 int 16h
-jz @@repeat 			; flag checken of er een key is ingedrukt
+jz @@repeat 			; check flag key was pressed 
 
 mov ah, 00h
 int 16h
 cmp ax, [@@keyCode] ; scancode in ah
-jne @@repeat			; als andere key opnieuw scanne
+jne @@repeat				; if other key scan again
 
 	ret
 ENDP waitForSpecificKeystroke
+
 
 ; Terminate the program.
 PROC terminateProcess
@@ -100,18 +128,59 @@ PROC main
 	pop	es
 
 	call	setVideoMode,13h
-	; call	fillBackground, 0
+	call	fillBackground, 08h
+	call	drawSprite, offset logo, 50, 50 
 
-	mov	ah,00h
-	int	16h
-	; (replace by) call	waitForSpecificKeystroke, 001Bh ; keycode for ESC
-	
+	call	waitForSpecificKeystroke, 011Bh ; keycode for ESC (001Bh)
+
 	call terminateProcess
 ENDP main
 
 ; -------------------------------------------------------------------
 DATASEG
 	palette		db 768 dup (?)
+
+	logo  DB 0FH, 00H, 00H, 0EH, 0EH, 27H, 27H, 0FH, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+        DB 22H, 22H, 22H, 22H, 22H, 22H, 22H, 22H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+        DB 22H, 22H, 0FH, 0FH, 0FH, 0FH, 22H, 22H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+        DB 22H, 22H, 0FH, 0FH, 0FH, 0FH, 22H, 22H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+        DB 22H, 22H, 0FH, 0FH, 0FH, 0FH, 22H, 22H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+        DB 22H, 22H, 0FH, 0FH, 0FH, 0FH, 22H, 22H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+        DB 0FH, 22H, 22H, 0FH, 0FH, 22H, 22H, 0FH, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+        DB 0FH, 0FH, 22H, 22H, 22H, 22H, 0FH, 0FH, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+
+	sprite 	DB 01H, 00H, 00H, 01H, 01H, 01H, 01H, 01H, 01H, 01H, 01H, 01H, 01H, 01H, 01H, 01H, 01H, 01H, 01H, 01H
+					DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 01H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 01H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 01H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 01H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 01H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 01H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 01H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 01H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 01H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+					DB 01H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
 ; -------------------------------------------------------------------
 ; STACK
 ; -------------------------------------------------------------------
