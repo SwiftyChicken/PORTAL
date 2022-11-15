@@ -12,9 +12,9 @@ x86 assembly remake of Portal Prelude on the TI-84
 	* Character: 
 		* Character-adt
 		* keyb invoer om character te besturen
-		* Draw-adt (sprite voor character) [W]
+		* ~~Draw-adt (sprite voor character)~~
 	* Level: 
-		* Draw-adt (enkel background tekenen)
+		* ~~Draw-adt (enkel background tekenen)~~
 
 
 Main-adt:	Keyb handler, gameloop, levels oproepen   
