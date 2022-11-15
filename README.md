@@ -7,12 +7,12 @@ x86 assembly remake of Portal Prelude on the TI-84
 
 
 ### Fase 1: Character can move
-	* Gameloop, keyb handler (cf. EXAMPLE code)
+	* Gameloop, keyb handler (cf. EXAMPLE code) [E]
 	* Position-adt
 	* Character: 
 		* Character-adt
 		* keyb invoer om character te besturen
-		* Draw-adt (sprite of block voor character)
+		* Draw-adt (sprite voor character) [W]
 	* Level: 
 		* Draw-adt (enkel background tekenen)
 
