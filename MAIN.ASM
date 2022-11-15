@@ -46,12 +46,11 @@ PROC fillBackground
 ENDP fillBackground
 
 PROC checkEscape
-	ARG 	@@key:BYTE
   USES EAX
 
   MOV	AH,00H
 	INT	16H
-	CMP	AL,[@@key]
+	CMP	AL, 1BH
 
 	RET
 ENDP checkEscape
@@ -72,24 +71,20 @@ PROC main
   POP ES
 
   CALL setVideoMode, 13H
-  CALL fillBackground, 0FH
+  CALL fillBackground, 00H
 
   @@gameLoop:
-    
     CALL checkEscape
 	  JNE	@@gameLoop
-    
   CALL exit
+
 ENDP main
 
 ;-----------------------------------------------------------
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-line DB 0FH
-     DB 0FH
-     DB 0FH
-     DB 0FH
+line DB 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH
 
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
