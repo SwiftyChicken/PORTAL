@@ -3,8 +3,8 @@
 ; 32-bit x86 assembly language
 ; TASM
 ;
-; author:	Wannes, Richard
-; program:	Video mode 13h
+; author:		Wannes Dewit, Richard Rwema
+; program:	Draw	
 ; -------------------------------------------------------------------
 
 IDEAL
@@ -33,16 +33,30 @@ int 10h
 ENDP setVideoMode
 
 
-PROC drawPixel
-USES edi, eax
+; Update the colour palette.
+; 	* Ncolours: number of colours that have to be updated [word]
+PROC updateColourPalette
+	ARG	 	@@Ncolours: word
+	USES 	eax, ecx, edx, esi
 
-MOV EDI, 0A0000H    ; frame buffer address
-ADD EDI, 320*2 + 10 ; add the appropriate offset
-MOV AL, 15          ; index in the colour palette
-MOV [EDI], AL       ; change pixel at column 10 of row 2
+	mov esi, offset palette	; pointer to source palette
+	movzx ecx, [@@Ncolours] ; amount of colors to read (movzx = zero extend)
+	
+	; multiply ecx by 3 (three color components per color)
+	; do it efficiently (2*ecx + ecx)
+	mov eax, ecx
+	sal eax, 1
+	add ecx, eax
+
+	mov dx, 03C8h 	; DAC write port
+	xor al, al		; index of first color to change (0)
+	out dx, al		; write to IO
+
+	inc dx
+	rep outsb		; update all colors
 
 	ret
-ENDP drawPixel
+ENDP updateColourPalette
 
 
 ; Fill the background (for mode 13h)
@@ -54,19 +68,6 @@ mov eax, [@@color]
 mov edi, VMEMADR 							; access video memory
 mov ecx, SCRWIDTH * SCRHEIGHT ; amount of pixels on screen 
 rep stosb
-
-; 00H color is background/transparent
-mov dx, 03C8H	; port to signal index for modification
-mov al, 0H		; change the colour at index 0
-out dx, al		; write AL to the appropriate port
-mov dx, 03C9H	; port to communicate the new colour
-;mov eax, [@@color]
-mov al, 15h		; hardcoded value that corresponds to the bgcolor
-out dx, al		; R value
-;shl eax, 8		; next value
-out dx, al		; G vaue
-;shl eax, 8		; next value
-out dx, al 		; B value
 
 	ret
 ENDP fillBackground
@@ -141,59 +142,44 @@ PROC main
 	pop	es
 
 	call	setVideoMode,13h
-	call	fillBackground, 08h
-	call	drawSprite, offset character, 100, 80 
+	call updateColourPalette, 6
+	
+	call	fillBackground, 00h
+	call	drawSprite, offset character, SCRWIDTH / 2, SCRHEIGHT / 2 ; top coord in the middle
 
-	call	waitForSpecificKeystroke, 011Bh ; keycode for ESC (001Bh)
-
+	call	waitForSpecificKeystroke, 011Bh ; keycode for ESC
 	call terminateProcess
 ENDP main
 
 ; -------------------------------------------------------------------
 DATASEG
-	palette		db 768 dup (?)
+	palette db 20, 20, 20 ; background color
+				db 0, 0, 0 			; black
+				db 63, 63, 63		; white
+				db 50, 50, 50		; light gray
+				db 0, 16, 63		; blue
+				db 63, 20, 2		; orange
 
-	logo  DB 0FH, 00H, 00H, 0EH, 0EH, 27H, 27H, 0FH, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-        DB 22H, 22H, 22H, 22H, 22H, 22H, 22H, 22H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-        DB 22H, 22H, 0FH, 0FH, 0FH, 0FH, 22H, 22H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-        DB 22H, 22H, 0FH, 0FH, 0FH, 0FH, 22H, 22H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-        DB 22H, 22H, 0FH, 0FH, 0FH, 0FH, 22H, 22H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-        DB 22H, 22H, 0FH, 0FH, 0FH, 0FH, 22H, 22H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-        DB 0FH, 22H, 22H, 0FH, 0FH, 22H, 22H, 0FH, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-        DB 0FH, 0FH, 22H, 22H, 22H, 22H, 0FH, 0FH, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 11H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 11H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 11H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 11H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-
-	character	DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 00H, 00H, 00H, 00H, 00H, 00H, 00H
-				DB 00H, 00H, 00H, 00H, 00H, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 00H, 00H, 00H, 00H, 00H
-				DB 00H, 00H, 00H, 00H, 0FH, 0FH, 0FH, 1CH, 1CH, 1CH, 1CH, 1CH, 1CH, 0FH, 0FH, 0FH, 00H, 00H, 00H, 00H
-				DB 00H, 00H, 00H, 0FH, 0FH, 0FH, 0FH, 1CH, 1CH, 1CH, 1CH, 1CH, 1CH, 0FH, 0FH, 0FH, 0FH, 00H, 00H, 00H
-				DB 00H, 00H, 00H, 0FH, 0FH, 0FH, 0FH, 1CH, 1CH, 1CH, 1CH, 1CH, 1CH, 0FH, 0FH, 0FH, 0FH, 00H, 00H, 00H
-				DB 00H, 00H, 0FH, 0FH, 0FH, 0FH, 0FH, 1CH, 1CH, 1CH, 1CH, 1CH, 1CH, 0FH, 0FH, 0FH, 0FH, 0FH, 00H, 00H
-				DB 00H, 00H, 0FH, 0FH, 0FH, 0FH, 0FH, 1CH, 1CH, 1CH, 1CH, 1CH, 1CH, 0FH, 0FH, 0FH, 0FH, 0FH, 00H, 00H
-				DB 00H, 00H, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 09H, 09H, 09H, 09H, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 00H, 00H
-				DB 00H, 00H, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 09H, 09H, 09H, 09H, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 00H, 00H
-				DB 00H, 0FH, 0FH, 0FH, 0FH, 10H, 10H, 10H, 09H, 09H, 09H, 09H, 10H, 10H, 10H, 0FH, 0FH, 0FH, 0FH, 00H
-				DB 00H, 0FH, 10H, 10H, 10H, 10H, 0FH, 0FH, 09H, 09H, 09H, 09H, 0FH, 0FH, 10H, 10H, 10H, 10H, 0FH, 00H
-				DB 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 09H, 09H, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH
-				DB 0FH, 00H, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 00H, 0FH
-				DB 0FH, 00H, 00H, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 00H, 00H, 0FH
-				DB 0FH, 0FH, 00H, 1EH, 1EH, 1EH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 1EH, 1EH, 1EH, 00H, 0FH, 0FH
-				DB 00H, 0FH, 0FH, 00H, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 00H, 0FH, 0FH, 00H
-				DB 00H, 0FH, 00H, 0FH, 00H, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 00H, 0FH, 00H, 0FH, 00H
-				DB 00H, 0FH, 00H, 00H, 00H, 00H, 0FH, 1EH, 1EH, 1EH, 1EH, 1EH, 1EH, 0FH, 00H, 00H, 00H, 00H, 0FH, 00H
-				DB 00H, 00H, 0FH, 00H, 00H, 0FH, 00H, 0FH, 00H, 00H, 00H, 00H, 0FH, 00H, 0FH, 00H, 00H, 0FH, 00H, 00H
-				DB 00H, 00H, 00H, 00H, 0FH, 0FH, 0FH, 0FH, 00H, 00H, 00H, 00H, 0FH, 0FH, 0FH, 0FH, 00H, 00H, 00H, 00H
+	character	DB 00H, 00H, 00H, 00H, 00H, 00H, 00H, 02H, 02H, 02H, 02H, 02H, 02H, 00H, 00H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 00H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 00H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 02H, 02H, 02H, 03H, 03H, 03H, 03H, 03H, 03H, 02H, 02H, 02H, 00H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 02H, 02H, 02H, 02H, 03H, 03H, 03H, 03H, 03H, 03H, 02H, 02H, 02H, 02H, 00H, 00H, 00H
+				DB 00H, 00H, 00H, 02H, 02H, 02H, 02H, 03H, 03H, 03H, 03H, 03H, 03H, 02H, 02H, 02H, 02H, 00H, 00H, 00H
+				DB 00H, 00H, 02H, 02H, 02H, 02H, 02H, 03H, 03H, 03H, 03H, 03H, 03H, 02H, 02H, 02H, 02H, 02H, 00H, 00H
+				DB 00H, 00H, 02H, 02H, 02H, 02H, 02H, 03H, 03H, 03H, 03H, 03H, 03H, 02H, 02H, 02H, 02H, 02H, 00H, 00H
+				DB 00H, 00H, 02H, 02H, 02H, 02H, 02H, 02H, 04H, 04H, 04H, 04H, 02H, 02H, 02H, 02H, 02H, 02H, 00H, 00H
+				DB 00H, 00H, 02H, 02H, 02H, 02H, 02H, 02H, 04H, 04H, 04H, 04H, 02H, 02H, 02H, 02H, 02H, 02H, 00H, 00H
+				DB 00H, 02H, 02H, 02H, 02H, 01H, 01H, 01H, 04H, 04H, 04H, 04H, 01H, 01H, 01H, 02H, 02H, 02H, 02H, 00H
+				DB 00H, 02H, 01H, 01H, 01H, 01H, 02H, 02H, 04H, 04H, 04H, 04H, 02H, 02H, 01H, 01H, 01H, 01H, 02H, 00H
+				DB 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 04H, 04H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H
+				DB 02H, 00H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 00H, 02H
+				DB 02H, 00H, 00H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 00H, 00H, 02H
+				DB 02H, 02H, 00H, 03H, 03H, 03H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 02H, 03H, 03H, 03H, 00H, 02H, 02H
+				DB 00H, 02H, 02H, 00H, 03H, 03H, 03H, 03H, 03H, 03H, 03H, 03H, 03H, 03H, 03H, 03H, 00H, 02H, 02H, 00H
+				DB 00H, 02H, 00H, 02H, 00H, 03H, 03H, 03H, 03H, 03H, 03H, 03H, 03H, 03H, 03H, 00H, 02H, 00H, 02H, 00H
+				DB 00H, 02H, 00H, 00H, 00H, 00H, 02H, 03H, 03H, 03H, 03H, 03H, 03H, 02H, 00H, 00H, 00H, 00H, 02H, 00H
+				DB 00H, 00H, 02H, 00H, 00H, 02H, 00H, 02H, 00H, 00H, 00H, 00H, 02H, 00H, 02H, 00H, 00H, 02H, 00H, 00H
+				DB 00H, 00H, 00H, 00H, 02H, 02H, 02H, 02H, 00H, 00H, 00H, 00H, 02H, 02H, 02H, 02H, 00H, 00H, 00H, 00H
 ; -------------------------------------------------------------------
 ; STACK
 ; -------------------------------------------------------------------
