@@ -68,6 +68,7 @@ PROC draw
   USES ESI, EDI, ECX, EAX, EBX
 
   ; Set up Index registers
+  CLD
   MOV ESI, [@@image]
   MOV EDI, FBADR
 
