@@ -19,6 +19,11 @@ SCALE EQU 4   ; image scale
 ;-----------------------------------------------------------
 CODESEG
 
+STRUC Player
+  x dd ?
+  y dd ?
+ENDS Player
+
 PROC setVideoMode
   ARG @@mode:BYTE
   USES EAX
@@ -37,10 +42,15 @@ PROC fillBackground
   MOV EDI, FBADR ; Frame buffer start address
   
   MOV AL, [@@color]
+  MOV AH, AL
+  MOV CX, AX
+  SHL EAX, 16
+  MOV AX, CX
 
-  MOV ECX, SCRW * SCRH ; Amount of pixels on screen
 
-  REP STOSB
+  MOV ECX, (SCRW * SCRH)/4 ; Amount of pixels on screen
+
+  REP STOSD
 
   RET
 
@@ -124,10 +134,36 @@ ENDP checkEscape
 PROC exit
 	USES EAX
 	CALL setVideoMode, 03H
-	MOV	AX,04C00H
+	MOV	AX, 04C00H
 	INT 21H
+  
 	RET
 ENDP exit
+
+PROC movePlayer
+  USES EAX
+  
+  MOV	AH,00H
+	INT	16H
+	CMP	AX, 4B00H
+  JE @@left
+	CMP	AX, 4D00H
+  JE @@right
+  JMP @@end
+
+  @@left:
+    SUB [player.y], 5
+    JMP @@end
+
+  @@right:
+    ADD [player.y], 5
+    JMP @@end
+
+
+  @@end:
+
+    RET
+ENDP movePlayer
 
 PROC main
   STI ;enable interupt
@@ -141,7 +177,9 @@ PROC main
   CALL draw, OFFSET level, 0, 0
 
   @@gameLoop:
-    CALL draw, OFFSET character, 44, 70
+    CALL movePlayer
+    CALL draw, OFFSET level, 0, 0
+    CALL draw, OFFSET character, [player.x], [player.y]
     CALL checkEscape
 	  JNE	@@gameLoop
   CALL exit
@@ -153,6 +191,7 @@ ENDP main
 ;-----------------------------------------------------------
 DATASEG
 
+player    Player  <44, 70>
 level     DW 50, 80
           DB 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH
           DB 0FH, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 0FH
@@ -212,6 +251,13 @@ character DW 5, 5
           DB 00H, 0FH, 0FH, 0FH, 00H
           DB 0FH, 00H, 00H, 00H, 0FH
 
+; scancode values				
+	keybscancodes 	db 29h, 02h, 03h, 04h, 05h, 06h, 07h, 08h, 09h, 0Ah, 0Bh, 0Ch, 0Dh, 0Eh, 	52h, 47h, 49h, 	45h, 35h, 00h, 4Ah
+					        db 0Fh, 10h, 11h, 12h, 13h, 14h, 15h, 16h, 17h, 18h, 19h, 1Ah, 1Bh, 		53h, 4Fh, 51h, 	47h, 48h, 49h, 		1Ch, 4Eh
+					        db 3Ah, 1Eh, 1Fh, 20h, 21h, 22h, 23h, 24h, 25h, 26h, 27h, 28h, 2Bh,    						4Bh, 4Ch, 4Dh
+					        db 2Ah, 00h, 2Ch, 2Dh, 2Eh, 2Fh, 30h, 31h, 32h, 33h, 34h, 35h, 36h,  			 48h, 		4Fh, 50h, 51h,  1Ch
+					        db 1Dh, 0h, 38h,  				39h,  				0h, 0h, 0h, 1Dh,  		4Bh, 50h, 4Dh,  52h, 53h
+
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
@@ -220,6 +266,6 @@ UDATASEG
 ; ----------------------------------------------------------
 ; STACK
 ; ----------------------------------------------------------
-STACK 100h
+STACK 100H
 
 END main
