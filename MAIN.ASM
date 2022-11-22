@@ -6,6 +6,7 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
+INCLUDE "keyb.inc"
 ;-----------------------------------------------------------
 ; CONSTANTS
 ;-----------------------------------------------------------
@@ -66,9 +67,15 @@ PROC drawLine ; Auxiliary proc for draw procedure
     PUSH ECX
     MOV ECX, SCALE
     LODSB        ; Load next pixel
+    CMP AL, 00H
+    JE @@skip
     REP STOSB    ; Draw pixel SCALE time
-    POP ECX
-    LOOP @@nextPixel
+    JMP @@next
+    @@skip:
+      ADD EDI, ECX
+    @@next:
+      POP ECX
+      LOOP @@nextPixel
 
   RET
 ENDP drawLine
@@ -121,6 +128,56 @@ PROC draw
   RET
 ENDP draw
 
+PROC drawSprite
+  ARG @@image:DWORD, @@sprite:DWORD
+  USES ESI, EDI, ECX, EAX, EBX
+
+  ; Set up Index registers
+  CLD
+  MOV ESI, [@@image]
+  MOV EDI, FBADR
+
+  ; Calculate the drawing start position => EDI
+  MOV EBX, [@@sprite]
+  MOV EBX, [EBX]
+  IMUL EBX, SCALE
+  MOV EAX, EBX
+  IMUL EAX, SCRW
+  MOV EBX, [@@sprite]
+  MOV EBX, [EBX + 4]
+  IMUL EBX, SCALE
+  ADD EAX, EBX
+  ADD EDI, EAX
+
+  LODSW         ; Load image height
+  MOV ECX, EAX  ; Outer loop index
+  LODSW         ; Load image width
+
+  @@nextLine:
+    PUSH ECX
+    MOV ECX, SCALE  ; Inner Loop index (draw each line SCALE time)
+
+    @@scale:
+      CALL drawLine, EAX ; pass line length (image width)
+
+      ; Go one line down
+      ADD EDI, SCRW 
+
+      ; Go back to the start of the line
+      PUSH EAX
+      IMUL EAX, SCALE
+      SUB EDI, EAX
+      POP EAX
+
+      LOOP @@scale
+
+    ADD ESI, EAX      ; Go to the next line of the image
+    POP ECX
+    LOOP @@nextLine
+
+  RET
+ENDP drawSprite
+
 PROC checkEscape
   USES EAX
 
@@ -152,11 +209,11 @@ PROC movePlayer
   JMP @@end
 
   @@left:
-    SUB [player.y], 5
+    SUB [player.y], 1
     JMP @@end
 
   @@right:
-    ADD [player.y], 5
+    ADD [player.y], 1
     JMP @@end
 
 
@@ -178,8 +235,9 @@ PROC main
 
   @@gameLoop:
     CALL movePlayer
+    CALL fillBackground, 00H
     CALL draw, OFFSET level, 0, 0
-    CALL draw, OFFSET character, [player.x], [player.y]
+    CALL drawSprite, OFFSET character, OFFSET player
     CALL checkEscape
 	  JNE	@@gameLoop
   CALL exit
