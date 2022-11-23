@@ -36,11 +36,24 @@ PROC setVideoMode
 
 ENDP setVideoMode
 
+PROC updateVideoBuffer
+  USES ESI, EDI, ECX
+
+  CLD
+  MOV ESI, OFFSET dbuff
+  MOV EDI, FBADR
+  
+  MOV ECX, SCRW * SCRH ; Amount of pixels on screen
+  REP MOVSB
+
+  RET
+ENDP updateVideoBuffer
+
 PROC fillBackground
   ARG @@color:BYTE
   USES EAX, ECX, EDI
 
-  MOV EDI, FBADR ; Frame buffer start address
+  MOV EDI, OFFSET dbuff ; Frame buffer start address
   
   MOV AL, [@@color]
   MOV AH, AL
@@ -49,9 +62,9 @@ PROC fillBackground
   MOV AX, CX
 
 
-  MOV ECX, (SCRW * SCRH)/4 ; Amount of pixels on screen
+  MOV ECX, SCRW * SCRH ; Amount of pixels on screen
 
-  REP STOSD
+  REP STOSB
 
   RET
 
@@ -87,7 +100,7 @@ PROC draw
   ; Set up Index registers
   CLD
   MOV ESI, [@@image]
-  MOV EDI, FBADR
+  MOV EDI, OFFSET dbuff
 
   ; Calculate the drawing start position => EDI
   MOV EBX, [@@row]
@@ -135,7 +148,7 @@ PROC drawSprite
   ; Set up Index registers
   CLD
   MOV ESI, [@@image]
-  MOV EDI, FBADR
+  MOV EDI, OFFSET dbuff
 
   ; Calculate the drawing start position => EDI
   MOV EBX, [@@sprite]
@@ -181,9 +194,6 @@ ENDP drawSprite
 PROC checkEscape
   USES EAX
 
-  MOV	AH,00H
-	INT	16H
-	CMP	AL, 1BH
 
 	RET
 ENDP checkEscape
@@ -197,14 +207,13 @@ PROC exit
 	RET
 ENDP exit
 
-PROC movePlayer
+PROC KeyboardHandler
   USES EAX
   
-  MOV	AH,00H
-	INT	16H
-	CMP	AX, 4B00H
+	MOV AL, [__keyb_rawScanCode] ; last pressed key
+	CMP	AL, 4BH
   JE @@left
-	CMP	AX, 4D00H
+	CMP	AL, 4DH
   JE @@right
   JMP @@end
 
@@ -216,11 +225,32 @@ PROC movePlayer
     ADD [player.y], 1
     JMP @@end
 
-
   @@end:
 
     RET
-ENDP movePlayer
+ENDP KeyboardHandler
+
+PROC WaitVBI
+  USES EDX, ECX
+
+  MOV DX, 03DAH ;VGA status port
+  MOV ECX, 3
+
+  @@waitForEnd:
+    IN AL, DX
+    AND AL, 8
+    JZ @@waitForEnd
+
+  @@waitForStart:
+    IN AL, DX
+    AND AL, 8
+    JNZ @@waitForStart
+
+  LOOP @@waitForEnd
+
+  RET
+ENDP WaitVBI
+
 
 PROC main
   STI ;enable interupt
@@ -229,16 +259,20 @@ PROC main
   PUSH DS
   POP ES
 
+	CALL __keyb_installKeyboardHandler
   CALL setVideoMode, 13H
   CALL fillBackground, 00H
   CALL draw, OFFSET level, 0, 0
 
   @@gameLoop:
-    CALL movePlayer
+    CALL KeyboardHandler
     CALL fillBackground, 00H
     CALL draw, OFFSET level, 0, 0
     CALL drawSprite, OFFSET character, OFFSET player
-    CALL checkEscape
+    CALL WaitVBI
+    CALL updateVideoBuffer
+	  MOV AL, [__keyb_rawScanCode] ; last pressed key
+	  CMP AL, 01H
 	  JNE	@@gameLoop
   CALL exit
 
@@ -309,6 +343,7 @@ character DW 5, 5
           DB 00H, 0FH, 0FH, 0FH, 00H
           DB 0FH, 00H, 00H, 00H, 0FH
 
+
 ; scancode values				
 	keybscancodes 	db 29h, 02h, 03h, 04h, 05h, 06h, 07h, 08h, 09h, 0Ah, 0Bh, 0Ch, 0Dh, 0Eh, 	52h, 47h, 49h, 	45h, 35h, 00h, 4Ah
 					        db 0Fh, 10h, 11h, 12h, 13h, 14h, 15h, 16h, 17h, 18h, 19h, 1Ah, 1Bh, 		53h, 4Fh, 51h, 	47h, 48h, 49h, 		1Ch, 4Eh
@@ -320,6 +355,7 @@ character DW 5, 5
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
 UDATASEG
+  dbuff DD (SCRW*SCRH)/4 DUP(?)
 
 ; ----------------------------------------------------------
 ; STACK
