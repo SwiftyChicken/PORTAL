@@ -14,6 +14,7 @@ FBADR EQU 0A0000h	; video memory address
 SCRW EQU 320	; screen witdth
 SCRH EQU 200	; screen height
 SCALE EQU 4   ; image scale
+FLOOR EQU 44
 
 ;-----------------------------------------------------------
 ; CODE
@@ -23,6 +24,8 @@ CODESEG
 STRUC Player
   x dd ?
   y dd ?
+  vx dd ?
+  vy dd ?
 ENDS Player
 
 PROC setVideoMode
@@ -207,7 +210,7 @@ PROC exit
 	RET
 ENDP exit
 
-PROC KeyboardHandler
+PROC keyboardHandler
   USES EAX
   
 	MOV AL, [__keyb_rawScanCode] ; last pressed key
@@ -215,26 +218,54 @@ PROC KeyboardHandler
   JE @@left
 	CMP	AL, 4DH
   JE @@right
+	CMP	AL, 48H
+  JE @@up
   JMP @@end
 
   @@left:
-    SUB [player.y], 1
+    SUB [player.vy], 1
     JMP @@end
 
   @@right:
-    ADD [player.y], 1
+    ADD [player.vy], 1
+    JMP @@end
+
+  @@up:
+    CMP [player.x], FLOOR
+    JNE @@end
+    SUB [player.vx], 5
     JMP @@end
 
   @@end:
 
     RET
-ENDP KeyboardHandler
+ENDP keyboardHandler
+
+PROC physicsHandler
+  USES EAX
+
+  MOV EAX, [player.vy]
+  ADD EAX, [player.y]
+  MOV [player.y], EAX
+  MOV [player.vy], 0
+  
+  MOV EAX, [player.vx]
+  ADD EAX, [player.x]
+  CMP EAX, FLOOR
+  JG @@end
+  MOV [player.x], EAX
+  INC [player.vx]
+
+  @@end:
+
+    RET
+ENDP physicsHandler
 
 PROC WaitVBI
   USES EDX, ECX
 
   MOV DX, 03DAH ;VGA status port
-  MOV ECX, 3
+  MOV ECX, 2
 
   @@waitForEnd:
     IN AL, DX
@@ -265,7 +296,8 @@ PROC main
   CALL draw, OFFSET level, 0, 0
 
   @@gameLoop:
-    CALL KeyboardHandler
+    CALL keyboardHandler
+    CALL physicsHandler
     CALL fillBackground, 00H
     CALL draw, OFFSET level, 0, 0
     CALL drawSprite, OFFSET character, OFFSET player
@@ -283,7 +315,7 @@ ENDP main
 ;-----------------------------------------------------------
 DATASEG
 
-player    Player  <44, 70>
+player    Player  <FLOOR, 70>
 level     DW 50, 80
           DB 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH, 0FH
           DB 0FH, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 00H, 0FH
