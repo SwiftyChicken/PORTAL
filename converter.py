@@ -29,11 +29,7 @@ def main(argv):
    with open(outputfile, 'wb') as output:
         for h in range(height):
             for w in range(width):
-                r, g, b = pixels[w, h]
-                r >>= 2
-                g >>= 2
-                b >>= 2
-
+                r, g, b = map(lambda n : n >> 2, pixels[w, h])
                 byte = (palette[(r, g, b)]).to_bytes(1, 'big')
                 output.write(byte)
 
