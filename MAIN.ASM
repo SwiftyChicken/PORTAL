@@ -14,7 +14,7 @@ FBADR EQU 0A0000h	; video memory address
 SCRW EQU 320	; screen witdth
 SCRH EQU 200	; screen height
 SCALE EQU 4   ; image scale
-FLOOR EQU 44
+FLOOR EQU 42
 
 ;-----------------------------------------------------------
 ; CODE
@@ -373,7 +373,7 @@ ENDP main
 ;-----------------------------------------------------------
 DATASEG
 
-  player    Player  <FLOOR, 70>
+  player    Player  <FLOOR, 20>
   
   level DB "lvl1.bin", 0	
   
