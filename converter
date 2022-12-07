@@ -11,6 +11,9 @@ def main(argv):
    outputfile = ''
 
    # HANDLE FLAGS
+   # -h: print command format
+   # -i: name of png file that need to be converted
+   # -o: name of the output binary file that you want to create
    try:
       opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
    except getopt.GetoptError:
@@ -20,9 +23,9 @@ def main(argv):
       if opt == '-h':
          print('converter.py -i <inputfile> -o <outputfile>')
          sys.exit()
-      elif opt in ("-i", "--ifile"):
+      elif opt in ("-i", "--input"):
          inputfile = arg
-      elif opt in ("-o", "--ofile"):
+      elif opt in ("-o", "--output"):
          outputfile = arg
 
    # CODE TO GENERATE BINAIRY
