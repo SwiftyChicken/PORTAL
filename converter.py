@@ -34,7 +34,7 @@ def main(argv):
                 g >>= 2
                 b >>= 2
 
-                byte = (palette[(r, g, b)]).to_bytes(2, byteorder='big')
+                byte = (palette[(r, g, b)]).to_bytes(1, 'big')
                 output.write(byte)
 
 if __name__ == "__main__":
