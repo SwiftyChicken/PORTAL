@@ -3,12 +3,14 @@
 import sys, getopt
 from PIL import Image
 
-palette = {(13, 13, 13): 1,
-           (40, 43, 36): 0}
+palette = {(40, 43, 36): 0,
+           (13, 13, 13): 1}
 
 def main(argv):
    inputfile = ''
    outputfile = ''
+
+   # HANDLE FLAGS
    try:
       opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
    except getopt.GetoptError:
@@ -23,15 +25,17 @@ def main(argv):
       elif opt in ("-o", "--ofile"):
          outputfile = arg
 
+   # CODE TO GENERATE BINAIRY
    img_png = Image.open(inputfile) 
-   pixels = img_png.load()
+   pixels = img_png.load()  # load image in to an array of pixels
    width, height = img_png.size
-   with open(outputfile, 'wb') as output:
+
+   with open(outputfile, 'wb') as output: # Convert pixels one by one to corresponding binairy in the palette
         for h in range(height):
             for w in range(width):
-                r, g, b = map(lambda n : n >> 2, pixels[w, h])
-                byte = (palette[(r, g, b)]).to_bytes(1, 'big')
-                output.write(byte)
+                r, g, b = map(lambda n : n >> 2, pixels[w, h]) # shift pixel color from 8bit to 6bit color
+                byte = (palette[(r, g, b)]).to_bytes(1, 'big') # get corresponding palette binary value
+                output.write(byte) # write binary to file
 
 if __name__ == "__main__":
    main(sys.argv[1:])
