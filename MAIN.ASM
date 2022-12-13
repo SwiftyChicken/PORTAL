@@ -65,9 +65,9 @@ PROC fillBackground
   MOV AX, CX
 
 
-  MOV ECX, SCRW * SCRH ; Amount of pixels on screen
+  MOV ECX, SCRW * SCRH/4 ; Amount of pixels on screen
 
-  REP STOSB
+  REP STOSD
 
   RET
 
