@@ -32,6 +32,9 @@ def main(argv):
    img_png = Image.open(inputfile) 
    pixels = img_png.load()  # load image in to an array of pixels
    width, height = img_png.size
+   print(width)
+   print("x")
+   print(height)
 
    with open(outputfile, 'wb') as output: # Convert pixels one by one to corresponding binairy in the palette
         for h in range(height):

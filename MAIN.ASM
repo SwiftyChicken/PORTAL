@@ -184,9 +184,35 @@ PROC drawSprite
   ARG @@image:DWORD, @@sprite:DWORD
   USES ESI, EDI, ECX, EAX, EBX
 
+	; open file, get filehandle in AX
+	MOV AL, 0 ; read only
+	MOV EDX, [@@image]
+	MOV AH, 3DH
+	INT 21H
+
+	mov  edx, offset openErrorMsg
+	jc @@print_error ; carry flag is set if error occurs
+
+	; read file data
+	MOV BX, AX ; move filehandle to bx
+	MOV ECX, (SCRW*SCRH)/4
+	MOV EDX, OFFSET filebuff
+	MOV AH, 3FH
+	INT 21H
+
+	mov  edx, offset readErrorMsg
+	jc @@print_error
+
+	; close file
+	MOV AH, 3EH
+	INT 21H
+
+	mov  edx, offset closeErrorMsg
+	jc @@print_error
+	
   ; Set up Index registers
   CLD
-  MOV ESI, [@@image]
+  MOV ESI, OFFSET filebuff
   MOV EDI, OFFSET dbuff
 
   ; Calculate the drawing start position => EDI
@@ -201,9 +227,8 @@ PROC drawSprite
   ADD EAX, EBX
   ADD EDI, EAX
 
-  LODSW         ; Load image height
-  MOV ECX, EAX  ; Outer loop index
-  LODSW         ; Load image width
+  MOV ECX, 5
+  MOV EAX, 5
 
   @@nextLine:
     PUSH ECX
@@ -228,6 +253,17 @@ PROC drawSprite
     LOOP @@nextLine
 
   RET
+
+  @@print_error:
+  	call setVideoMode, 03h
+  	mov  ah, 09h
+  	int  21h
+  	
+  	mov	ah,00h
+  	int	16h
+  	call exit	
+  
+    RET
 ENDP drawSprite
 
 PROC checkEscape
@@ -377,14 +413,8 @@ DATASEG
   
   level DB "lvl1.bin", 0	
   
-  character DW 5, 5
-            DB 00H, 00H, 0FH, 00H, 00H
-            DB 00H, 00H, 0FH, 0FH, 00H
-            DB 00H, 00H, 0FH, 00H, 00H
-            DB 00H, 0FH, 0FH, 0FH, 00H
-            DB 0FH, 00H, 00H, 00H, 0FH
-  
-  
+  character DB "player.bin", 0
+
   ; keys to be tracked
   keytracker  DW 3
               DB 75, 4BH  ; left key
