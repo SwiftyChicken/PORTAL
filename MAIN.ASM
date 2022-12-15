@@ -6,7 +6,7 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
-INCLUDE "keyb.inc"
+INCLUDE "INC/KEYB.INC"
 ;-----------------------------------------------------------
 ; CONSTANTS
 ;-----------------------------------------------------------
@@ -411,9 +411,9 @@ DATASEG
 
   player    Player  <FLOOR, 20>
   
-  level DB "lvl1.bin", 0	
+  level DB "VIEW/IMG/LVL1.BIN", 0	
   
-  character DB "player.bin", 0
+  character DB "VIEW/IMG/PLAYER.BIN", 0
 
   ; keys to be tracked
   keytracker  DW 3

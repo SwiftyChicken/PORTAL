@@ -3,18 +3,22 @@
 # =============================================================================
 
 # Settings - Edit the names of the object and executable files.
-objects1 = keyb.obj main.obj
-dest = main.exe
+
+objects1 = model\keyb.obj main.obj
+dest = portal.exe
 
 # =============================================================================
 # Do NOT edit this section, unless you know what you are doing.
 # =============================================================================
 .asm.obj
   # use TASM with debug info (stripped anyway by wlink if not used)
-  tasm /ml /m2 /w2 /z /zi $<
+  tasm /ml /m2 /w2 /z /zi $< 
 
 $(dest): $(objects1)
   wlink option quiet system pmodew name $@ file {$(objects1)}
+
+model\keyb.obj:
+  tasm /ml /m2 /w2 /z /zi model\keyb.asm model\keyb.obj
 
 clean: .symbolic
   del *.obj
