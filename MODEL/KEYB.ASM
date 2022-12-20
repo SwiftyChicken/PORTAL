@@ -6,7 +6,7 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
-INCLUDE "keyb.inc"
+INCLUDE "INC/KEYB.INC"
 
 ;-----------------------------------------------------------
 ; CODE
