@@ -115,7 +115,7 @@ PROC fillBackground
 ENDP fillBackground
 
 PROC draw
-  ARG @@image:DWORD, @@row:DWORD, @@column:DWORD
+  ARG @@image:DWORD, @@column:DWORD, @@row:DWORD 
   USES ESI, EDI, ECX, EAX, EBX, EDX
 
 	; open file, get filehandle in AX
