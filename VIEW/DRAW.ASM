@@ -6,9 +6,22 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
+INCLUDE "INC/DRAW.INC"
+
+FBADR EQU 0A0000h	; video memory address
+SCRW EQU 320	; screen witdth
+SCRH EQU 200	; screen height
+SCALE EQU 4   ; image scale
+FLOOR EQU 42
+
+;-----------------------------------------------------------
+; CODE
+;-----------------------------------------------------------
+CODESEG
+
 ;;;;;;;;;;;;;;;;;;;;; VGA PROCS ;;;;;;;;;;;;;;;;;;;;;;;;::::
 
-PROC setVideoMode
+PROC __setVideoMode
   ARG @@mode:BYTE
   USES EAX
 
@@ -17,9 +30,9 @@ PROC setVideoMode
 
   RET
 
-ENDP setVideoMode
+ENDP __setVideoMode
 
-PROC updateVideoBuffer
+PROC __updateVideoBuffer
   USES ESI, EDI, ECX
 
   CLD
@@ -30,9 +43,9 @@ PROC updateVideoBuffer
   REP MOVSB
 
   RET
-ENDP updateVideoBuffer
+ENDP __updateVideoBuffer
 
-PROC WaitVBI
+PROC __waitVBI
   USES EDX, ECX
 
   MOV DX, 03DAH ;VGA status port
@@ -51,11 +64,11 @@ PROC WaitVBI
   LOOP @@waitForEnd
 
   RET
-ENDP WaitVBI
+ENDP __waitVBI
 
 ;;;;;;;;;;;;;;;;;;;;; DRAW PROCS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-PROC fillBackground
+PROC __fillBackground
   ARG @@color:BYTE
   USES EAX, ECX, EDI
 
@@ -74,9 +87,9 @@ PROC fillBackground
 
   RET
 
-ENDP fillBackground
+ENDP __fillBackground
 
-PROC draw
+PROC __draw
   ARG @@image:DWORD, @@row:DWORD, @@column:DWORD
   USES ESI, EDI, ECX, EAX, EBX, EDX
 
@@ -148,17 +161,16 @@ PROC draw
     RET
 
 @@print_error:
-	call setVideoMode, 03h
+	call __setVideoMode, 03h
 	mov  ah, 09h
 	int  21h
 	
 	mov	ah,00h
 	int	16h
-	call exit	
 
   RET
 
-ENDP draw
+ENDP __draw
 
 ;;;;;;;;;;;;;;;;;;;;; AUXILIARY PROCS ;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,3 +196,25 @@ PROC drawLine ; Auxiliary proc for draw procedure
 
   RET
 ENDP drawLine
+
+;-----------------------------------------------------------
+; DATA
+;-----------------------------------------------------------
+DATASEG
+
+  openErrorMsg db "could not open file", 13, 10, '$'
+  readErrorMsg db "could not read data", 13, 10, '$'
+  closeErrorMsg db "error during file closing", 13, 10, '$'
+;-----------------------------------------------------------
+; UNINITIALISED DATA
+;-----------------------------------------------------------
+UDATASEG
+  dbuff DD (SCRW*SCRH)/4 DUP(?)
+  filebuff DD (SCRW*SCRH)/4 DUP(?)
+
+; ----------------------------------------------------------
+; STACK
+; ----------------------------------------------------------
+STACK 100H
+
+END
