@@ -127,6 +127,7 @@ PROC main
 
 	CALL __keyb_installKeyboardHandler
   CALL setVideoMode, 13H
+  CALL updateColourPalette, 6
   CALL fillBackground, 00H
   CALL draw, OFFSET level, 0, 0
 
@@ -149,7 +150,6 @@ ENDP main
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-
   player    Player  <FLOOR, 20>
   
   level DB "VIEW/IMG/LVL1.BIN", 0	
