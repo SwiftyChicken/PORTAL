@@ -29,9 +29,62 @@ STRUC Player
   vy dd ?
 ENDS Player
 
-PROC checkEscape
+;;;;;;;;;;;;;;;;;;;;; GAME LOGIC ;;;;;;;;;;;;;;;;;;;;;;;;::::
+
+PROC actionHandler
+  ARG @@key:DWORD
+  
+	CMP	AL, 4BH
+  JE @@left
+	CMP	AL, 4DH
+  JE @@right
+	CMP	AL, 48H
+  JE @@up
+  JMP @@end
+
+  @@left:
+    SUB [player.vx], 1
+    JMP @@end
+
+  @@right:
+    ADD [player.vx], 1
+    JMP @@end
+
+  @@up:
+    CMP [player.y], FLOOR
+    JNE @@end
+    SUB [player.vy], 5
+    JMP @@end
+
+  @@end:
+
+    RET
+ENDP actionHandler
+
+PROC physicsHandler
   USES EAX
 
+  MOV EAX, [player.vx]
+  ADD EAX, [player.x]
+  MOV [player.x], EAX
+  MOV [player.vx], 0
+  
+  MOV EAX, [player.vy]
+  ADD EAX, [player.y]
+  CMP EAX, FLOOR
+  JG @@end
+  MOV [player.y], EAX
+  INC [player.vy] 			;gravity
+
+  @@end:
+
+    RET
+ENDP physicsHandler
+
+;;;;;;;;;;;;;;;;;;;;; GENERAL IO ;;;;;;;;;;;;;;;;;;;;;;;;::::
+
+PROC checkEscape
+  USES EAX
 
 	RET
 ENDP checkEscape
@@ -63,60 +116,9 @@ PROC keyboardHandler
 
     @@skip:
     LOOP @@loop
-
     
   RET
 ENDP keyboardHandler
-
-PROC actionHandler
-  ARG @@key:DWORD
-  
-	CMP	AL, 4BH
-  JE @@left
-	CMP	AL, 4DH
-  JE @@right
-	CMP	AL, 48H
-  JE @@up
-  JMP @@end
-
-  @@left:
-    SUB [player.vy], 1
-    JMP @@end
-
-  @@right:
-    ADD [player.vy], 1
-    JMP @@end
-
-  @@up:
-    CMP [player.x], FLOOR
-    JNE @@end
-    SUB [player.vx], 5
-    JMP @@end
-
-  @@end:
-
-    RET
-ENDP actionHandler
-
-PROC physicsHandler
-  USES EAX
-
-  MOV EAX, [player.vy]
-  ADD EAX, [player.y]
-  MOV [player.y], EAX
-  MOV [player.vy], 0
-  
-  MOV EAX, [player.vx]
-  ADD EAX, [player.x]
-  CMP EAX, FLOOR
-  JG @@end
-  MOV [player.x], EAX
-  INC [player.vx]
-
-  @@end:
-
-    RET
-ENDP physicsHandler
 
 PROC main
   STI ;enable interupt
@@ -150,7 +152,7 @@ ENDP main
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-  player    Player  <FLOOR, 20>
+  player    Player  <20, FLOOR>
   
   level DB "VIEW/IMG/LVL1.BIN", 0	
   
