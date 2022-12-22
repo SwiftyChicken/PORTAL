@@ -21,7 +21,7 @@ CODESEG
 
 ;;;;;;;;;;;;;;;;;;;;; VGA PROCS ;;;;;;;;;;;;;;;;;;;;;;;;::::
 
-PROC __setVideoMode
+PROC setVideoMode
   ARG @@mode:BYTE
   USES EAX
 
@@ -30,9 +30,9 @@ PROC __setVideoMode
 
   RET
 
-ENDP __setVideoMode
+ENDP setVideoMode
 
-PROC __updateVideoBuffer
+PROC updateVideoBuffer
   USES ESI, EDI, ECX
 
   CLD
@@ -43,9 +43,9 @@ PROC __updateVideoBuffer
   REP MOVSB
 
   RET
-ENDP __updateVideoBuffer
+ENDP updateVideoBuffer
 
-PROC __waitVBI
+PROC waitVBI
   USES EDX, ECX
 
   MOV DX, 03DAH ;VGA status port
@@ -64,11 +64,11 @@ PROC __waitVBI
   LOOP @@waitForEnd
 
   RET
-ENDP __waitVBI
+ENDP waitVBI
 
 ;;;;;;;;;;;;;;;;;;;;; DRAW PROCS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-PROC __fillBackground
+PROC fillBackground
   ARG @@color:BYTE
   USES EAX, ECX, EDI
 
@@ -87,9 +87,9 @@ PROC __fillBackground
 
   RET
 
-ENDP __fillBackground
+ENDP fillBackground
 
-PROC __draw
+PROC draw
   ARG @@image:DWORD, @@row:DWORD, @@column:DWORD
   USES ESI, EDI, ECX, EAX, EBX, EDX
 
@@ -99,8 +99,8 @@ PROC __draw
 	MOV AH, 3DH
 	INT 21H
 
-	mov  edx, offset openErrorMsg
-	jc @@print_error ; carry flag is set if error occurs
+	MOV  EDX, OFFSET openErrorMsg
+	JC @@print_error ; carry flag is set if error occurs
 
 	; read file data
 	MOV BX, AX ; move filehandle to bx
@@ -109,15 +109,15 @@ PROC __draw
 	MOV AH, 3FH
 	INT 21H
 
-	mov  edx, offset readErrorMsg
-	jc @@print_error
+	MOV  EDX, OFFSET readErrorMsg
+	JC @@print_error
 
 	; close file
 	MOV AH, 3EH
 	INT 21H
 
-	mov  edx, offset closeErrorMsg
-	jc @@print_error
+	MOV  EDX, OFFSET closeErrorMsg
+	JC @@print_error
 	
   ; Set up Index registers
   MOV ESI, OFFSET filebuff
@@ -161,7 +161,7 @@ PROC __draw
     RET
 
 @@print_error:
-	call __setVideoMode, 03h
+	call setVideoMode, 03h
 	mov  ah, 09h
 	int  21h
 	
@@ -170,7 +170,7 @@ PROC __draw
 
   RET
 
-ENDP __draw
+ENDP draw
 
 ;;;;;;;;;;;;;;;;;;;;; AUXILIARY PROCS ;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -2,10 +2,10 @@
 ; VIEW\DRAW.ASM
 ;-------------------------------------------------------------------
 
-GLOBAL __setVideoMode:PROC
-GLOBAL __updateVideoBuffer:PROC
-GLOBAL __waitVBI:PROC
-GLOBAL __fillBackground:PROC
-GLOBAL __draw:PROC
+GLOBAL setVideoMode:PROC
+GLOBAL updateVideoBuffer:PROC
+GLOBAL waitVBI:PROC
+GLOBAL fillBackground:PROC
+GLOBAL draw:PROC
 
-GLOBAL dbuff:BYTE:16000
+GLOBAL dbuff:DWORD:16000
