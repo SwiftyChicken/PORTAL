@@ -10,9 +10,9 @@ LINK = wlink
 AFLAGS = /ml /m2 /w2 /z /zi 
 LFLAGS = option quiet system pmodew name $@ file   
 
-model = keyb.obj
-view = draw.obj
-controler = main.obj
+model = model\keyb.obj
+view = view\draw.obj
+controler = contrlr\main.obj
 
 objs = $(model) $(view) $(controler)
 dest = portal.exe

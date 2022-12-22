@@ -38,7 +38,7 @@ ENDP checkEscape
 
 PROC exit
 	USES EAX
-	CALL __setVideoMode, 03H
+	CALL setVideoMode, 03H
 	MOV	AX, 04C00H
 	INT 21H
   
@@ -126,18 +126,18 @@ PROC main
   POP ES
 
 	CALL __keyb_installKeyboardHandler
-  CALL __setVideoMode, 13H
-  CALL __fillBackground, 00H
-  CALL __draw, OFFSET level, 0, 0
+  CALL setVideoMode, 13H
+  CALL fillBackground, 00H
+  CALL draw, OFFSET level, 0, 0
 
   @@gameLoop:
     CALL keyboardHandler
     CALL physicsHandler
-    CALL __fillBackground, 00H
-    CALL __draw, OFFSET level, 0, 0
-    CALL __draw, OFFSET character, [player.x], [player.y]
-    CALL __waitVBI
-    CALL __updateVideoBuffer
+    CALL fillBackground, 00H
+    CALL draw, OFFSET level, 0, 0
+    CALL draw, OFFSET character, [player.x], [player.y]
+    CALL waitVBI
+    CALL updateVideoBuffer
 	  MOV AL, [__keyb_rawScanCode] ; last pressed key
 	  CMP AL, 01H
 	  JNE	@@gameLoop
@@ -162,17 +162,6 @@ DATASEG
               DB 77, 4DH  ; right key
               DB 72, 48H  ; up key
   
-  openErrorMsg db "could not open file", 13, 10, '$'
-  readErrorMsg db "could not read data", 13, 10, '$'
-  closeErrorMsg db "error during file closing", 13, 10, '$'
-  
-;-----------------------------------------------------------
-; UNINITIALISED DATA
-;-----------------------------------------------------------
-UDATASEG
-  dbuff DD (SCRW*SCRH)/4 DUP(?)
-  filebuff DD (SCRW*SCRH)/4 DUP(?)
-
 ; ----------------------------------------------------------
 ; STACK
 ; ----------------------------------------------------------
