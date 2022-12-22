@@ -68,6 +68,31 @@ ENDP waitVBI
 
 ;;;;;;;;;;;;;;;;;;;;; DRAW PROCS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Update the colour palette.
+; 	* Ncolours: number of colours that have to be updated [word]
+PROC updateColourPalette
+	ARG	 	@@Ncolours: WORD
+	USES 	EAX, ECX, EDX, ESI
+
+	MOV ESI, offset palette	; pointer to source palette
+	MOVZX ECX, [@@Ncolours] ; amount of colors to read (movzx = zero extend)
+	
+	; multiply ecx by 3 (three color components per color)
+	; do it efficiently (2*ecx + ecx)
+	MOV EAX, ECX
+	SAL EAX, 1
+	ADD ECX, EAX
+
+	MOV DX, 03C8h 	; DAC write port
+	XOR AL, AL		; index of first color to change (0)
+	OUT DX, AL		; write to IO
+
+	INC DX
+	REP OUTSB		; update all colors
+
+	RET
+ENDP updateColourPalette
+
 PROC fillBackground
   ARG @@color:BYTE
   USES EAX, ECX, EDI
@@ -133,8 +158,8 @@ PROC draw
   ADD EAX, EBX
   ADD EDI, EAX
 
-  MOV ECX, 50  ; Outer loop index aka height
-  MOV EAX, 80         ; Load image width
+  MOV ECX, 5  ; Outer loop index aka height
+  MOV EAX, 5         ; Load image width
 
   @@nextLine:
     PUSH ECX
@@ -201,6 +226,13 @@ ENDP drawLine
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
+
+  palette DB 20, 20, 20   ; background color
+				  DB 0, 0, 0 			; black
+				  DB 63, 63, 63		; white
+				  DB 50, 50, 50		; light gray
+				  DB 0, 16, 63		; blue
+				  DB 63, 20, 2		; orange
 
   openErrorMsg db "could not open file", 13, 10, '$'
   readErrorMsg db "could not read data", 13, 10, '$'
