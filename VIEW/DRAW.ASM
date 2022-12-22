@@ -226,8 +226,8 @@ ENDP drawLine
 ;-----------------------------------------------------------
 DATASEG
 
-  palette DB 20, 20, 20   ; background color
-				  DB 0, 0, 0 			; black
+  palette DB 38, 41, 33   ; background color
+				  DB 6, 8, 6 			; black
 				  DB 63, 63, 63		; white
 				  DB 50, 50, 50		; light gray
 				  DB 0, 16, 63		; blue
