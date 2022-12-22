@@ -157,8 +157,8 @@ PROC draw
   ADD EAX, EBX
   ADD EDI, EAX
 
-  MOV ECX, 5  ; Outer loop index aka height
-  MOV EAX, 5         ; Load image width
+  MOV ECX, 50  ; Outer loop index aka height
+  MOV EAX, 80         ; Load image width
 
   @@nextLine:
     PUSH ECX
