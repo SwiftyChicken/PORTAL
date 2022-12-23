@@ -3,8 +3,10 @@
 import sys, getopt
 from PIL import Image
 
-palette = {(40, 43, 36): 0,
-           (13, 13, 13): 1}
+palette = {(63, 63, 63): 0,  #background
+        (0, 0, 0): 1,        #wall
+        (40, 40, 40): 2,     #shootable wall
+        (0, 0, 63): 3}       #portal
 
 def main(argv):
    inputfile = ''
