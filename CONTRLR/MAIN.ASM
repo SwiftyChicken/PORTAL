@@ -61,7 +61,7 @@ PROC actionHandler
     RET
 ENDP actionHandler
 
-PROC physicsHandler
+PROC physicsHandlerPrev
   USES EAX
 
   MOV EAX, [player.vx]
@@ -79,7 +79,42 @@ PROC physicsHandler
   @@end:
 
     RET
+ENDP physicsHandlerPrev
+
+PROC physicsHandler
+  USES EAX, EBX
+
+  MOV EAX, [player.vx]
+  ADD EAX, [player.x]
+  
+  MOV EBX, [player.vy]
+  ADD EBX, [player.y]
+
+	CALL collisionHandler, EAX, EBX
+
+    RET
 ENDP physicsHandler
+
+;; TO DO
+PROC collisionHandler
+	ARG @@x0:DWORD, @@y0:DWORD
+	USES EAX, EBX, ECX, EDX
+
+	MOV EAX, [@@x0]
+  MOV [player.x], EAX				 ; move player
+  MOV [player.vx], 0
+
+	MOV EBX, [@@y0]
+  CMP EBX, FLOOR
+  JG @@dontMove
+	MOV [player.y], EBX 			 ; move player
+  INC [player.vy] ; gravity
+
+	@@dontMove:
+
+	RET
+ENDP collisionHandler 
+
 
 ;;;;;;;;;;;;;;;;;;;;; GENERAL IO ;;;;;;;;;;;;;;;;;;;;;;;;::::
 
