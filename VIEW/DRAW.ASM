@@ -20,7 +20,6 @@ FBUFF_SIZE EQU DBUFF_SIZE+2
 ; CODE
 ;-----------------------------------------------------------
 CODESEG
-
 ;;;;;;;;;;;;;;;;;;;;; VGA PROCS ;;;;;;;;;;;;;;;;;;;;;;;;::::
 
 PROC setVideoMode
@@ -107,8 +106,7 @@ PROC fillBackground
   SHL EAX, 16
   MOV AX, CX
 
-
-  MOV ECX, DBUFF_SIZE	  ; Amount of pixels on screen
+  MOV ECX, DBUFF_SIZE ; Amount of pixels on screen
 
   REP STOSD
 
@@ -160,9 +158,9 @@ PROC draw
   ADD EAX, EBX
   ADD EDI, EAX
 
-	LODSW
-	MOV ECX, EAX	; height in ECX
-	LODSW					; width in EAX
+  LODSW         ; Load image height
+  MOV ECX, EAX  ; Outer loop index
+  LODSW         ; Load image width
 
   @@nextLine:
     PUSH ECX
@@ -229,7 +227,6 @@ ENDP drawLine
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-
   palette DB 40, 43, 36   ; background color - green
 				  DB 13, 13, 13 	; wall+character - dark gray
 				  DB 50, 50, 50		; shootable wall - light gray
