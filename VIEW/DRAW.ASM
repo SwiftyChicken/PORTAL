@@ -13,6 +13,8 @@ SCRW EQU 320	; screen witdth
 SCRH EQU 200	; screen height
 SCALE EQU 4  ; image scale
 FLOOR EQU 42
+DBUFF_SIZE EQU (SCRW*SCRH)/4
+FBUFF_SIZE EQU DBUFF_SIZE+2
 
 ;-----------------------------------------------------------
 ; CODE
@@ -106,7 +108,7 @@ PROC fillBackground
   MOV AX, CX
 
 
-  MOV ECX, SCRW * SCRH/4 ; Amount of pixels on screen
+  MOV ECX, DBUFF_SIZE	  ; Amount of pixels on screen
 
   REP STOSD
 
@@ -115,7 +117,7 @@ PROC fillBackground
 ENDP fillBackground
 
 PROC draw
-  ARG @@image:DWORD, @@column:DWORD, @@row:DWORD, @@width:DWORD, @@height:DWORD
+  ARG @@image:DWORD, @@column:DWORD, @@row:DWORD
   USES ESI, EDI, ECX, EAX, EBX, EDX
 
 	; open bin file, get filehandle in AX
@@ -129,7 +131,7 @@ PROC draw
 
 	; read bin file data
 	MOV BX, AX ; move filehandle to bx
-	MOV ECX, (SCRW*SCRH)/4
+	MOV ECX, FBUFF_SIZE
 	MOV EDX, OFFSET filebuff
 	MOV AH, 3FH
 	INT 21H
@@ -158,8 +160,9 @@ PROC draw
   ADD EAX, EBX
   ADD EDI, EAX
 
-  MOV ECX, [@@height]  ; Outer loop index aka height
-  MOV EAX, [@@width]   ; Load image width
+	LODSW
+	MOV ECX, EAX	; height in ECX
+	LODSW					; width in EAX
 
   @@nextLine:
     PUSH ECX
@@ -240,8 +243,8 @@ DATASEG
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
 UDATASEG
-  dbuff DD (SCRW*SCRH)/4 DUP(?)
-  filebuff DD (SCRW*SCRH)/4 DUP(?)
+  dbuff DD DBUFF_SIZE DUP(?)
+  filebuff DD FBUFF_SIZE DUP(?)
 
 ; ----------------------------------------------------------
 ; STACK

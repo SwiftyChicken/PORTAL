@@ -71,6 +71,15 @@ PROC physicsHandler
   ADD EBX, [player.y]
 
 	CALL collisionHandler, EAX, EBX
+		MOV [player.x], EAX				 ; move player
+		MOV [player.vx], 0
+
+		CMP EBX, FLOOR
+		JG @@dontMove
+		MOV [player.y], EBX 			 ; move player
+		INC [player.vy] ; gravity
+
+	@@dontMove:
 
     RET
 ENDP physicsHandler
@@ -78,19 +87,10 @@ ENDP physicsHandler
 ;; TO DO
 PROC collisionHandler
 	ARG @@x0:DWORD, @@y0:DWORD
-	USES EAX, EBX, ECX, EDX
+	USES EAX, EBX
 
 	MOV EAX, [@@x0]
-  MOV [player.x], EAX				 ; move player
-  MOV [player.vx], 0
-
 	MOV EBX, [@@y0]
-  CMP EBX, FLOOR
-  JG @@dontMove
-	MOV [player.y], EBX 			 ; move player
-  INC [player.vy] ; gravity
-
-	@@dontMove:
 
 	RET
 ENDP collisionHandler 
@@ -146,14 +146,14 @@ PROC main
   CALL setVideoMode, 13H
   CALL updateColourPalette, 6
   CALL fillBackground, 00H
-  CALL draw, OFFSET level, 0, 0, 16, 10
+  CALL draw, OFFSET level, 0, 0
 
   @@gameLoop:
     CALL keyboardHandler
     CALL physicsHandler
     CALL fillBackground, 00H
-    CALL draw, OFFSET level, 0, 0, 16, 10
-    CALL draw, OFFSET character, [player.x], [player.y], 5, 5
+    CALL draw, OFFSET level, 0, 0
+    CALL draw, OFFSET character, [player.x], [player.y]
     CALL waitVBI
     CALL updateVideoBuffer
 	  MOV AL, [__keyb_rawScanCode] ; last pressed key
