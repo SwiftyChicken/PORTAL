@@ -172,8 +172,8 @@ PROC main
     CALL keyboardHandler
     CALL physicsHandler
     CALL fillBackground, 00H
-    CALL draw, OFFSET level, 0, 0
-    CALL draw, OFFSET character, [player.x], [player.y]
+    CALL draw, OFFSET level, 0, 0, 16, 10
+    CALL draw, OFFSET character, [player.x], [player.y], 5, 5
     CALL waitVBI
     CALL updateVideoBuffer
 	  MOV AL, [__keyb_rawScanCode] ; last pressed key

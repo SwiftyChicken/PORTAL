@@ -11,7 +11,7 @@ INCLUDE "INC/DRAW.INC"
 FBADR EQU 0A0000h	; video memory address
 SCRW EQU 320	; screen witdth
 SCRH EQU 200	; screen height
-SCALE EQU 4   ; image scale
+SCALE EQU 4  ; image scale
 FLOOR EQU 42
 
 ;-----------------------------------------------------------
@@ -115,10 +115,10 @@ PROC fillBackground
 ENDP fillBackground
 
 PROC draw
-  ARG @@image:DWORD, @@column:DWORD, @@row:DWORD 
+  ARG @@image:DWORD, @@column:DWORD, @@row:DWORD, @@width:DWORD, @@height:DWORD
   USES ESI, EDI, ECX, EAX, EBX, EDX
 
-	; open file, get filehandle in AX
+	; open bin file, get filehandle in AX
 	MOV AL, 0 ; read only
 	MOV EDX, [@@image]
 	MOV AH, 3DH
@@ -127,7 +127,7 @@ PROC draw
 	MOV  EDX, OFFSET openErrorMsg
 	JC @@print_error ; carry flag is set if error occurs
 
-	; read file data
+	; read bin file data
 	MOV BX, AX ; move filehandle to bx
 	MOV ECX, (SCRW*SCRH)/4
 	MOV EDX, OFFSET filebuff
@@ -137,7 +137,7 @@ PROC draw
 	MOV  EDX, OFFSET readErrorMsg
 	JC @@print_error
 
-	; close file
+	; close bin file
 	MOV AH, 3EH
 	INT 21H
 
@@ -158,8 +158,8 @@ PROC draw
   ADD EAX, EBX
   ADD EDI, EAX
 
-  MOV ECX, 5  ; Outer loop index aka height
-  MOV EAX, 5         ; Load image width
+  MOV ECX, [@@image]  ; Outer loop index aka height
+  MOV EAX, [@@width + 8]   ; Load image width
 
   @@nextLine:
     PUSH ECX
@@ -227,10 +227,9 @@ ENDP drawLine
 ;-----------------------------------------------------------
 DATASEG
 
-  palette DB 20, 20, 20   ; background color
-				  DB 0, 0, 0 			; black
-				  DB 63, 63, 63		; white
-				  DB 50, 50, 50		; light gray
+  palette DB 40, 43, 36   ; background color - green
+				  DB 13, 13, 13 	; wall+character - dark gray
+				  DB 50, 50, 50		; shootable wall - light gray
 				  DB 0, 16, 63		; blue
 				  DB 63, 20, 2		; orange
 
