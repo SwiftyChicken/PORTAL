@@ -7,7 +7,7 @@
 ASM = tasm
 LINK = wlink
 
-AFLAGS = /ml /m2 /w2 /z /zi 
+AFLAGS = /ml /m2 /w2 /z /zi /t
 LFLAGS = option quiet system pmodew name $@ file   
 
 model = model\keyb.obj
@@ -20,11 +20,12 @@ dest = portal.exe
 # =============================================================================
 # Do NOT edit this section, unless you know what you are doing.
 # =============================================================================
-.asm: CONTRLR/
 .asm: MODEL/
 .asm: VIEW/
-.asm.obj
+.asm: CONTRLR/
+.asm.obj:
   # use TASM with debug info (stripped anyway by wlink if not used)
+  del $@
   $(ASM) $(AFLAGS) $< $@ 
 
 $(dest): $(objs)
