@@ -157,8 +157,9 @@ PROC draw
   ADD EAX, EBX
   ADD EDI, EAX
 
-  MOV ECX, 50  ; Outer loop index aka height
-  MOV EAX, 80         ; Load image width
+  LODSW         ; Load image height
+  MOV ECX, EAX  ; Outer loop index
+  LODSW         ; Load image width
 
   @@nextLine:
     PUSH ECX
@@ -241,7 +242,7 @@ DATASEG
 ;-----------------------------------------------------------
 UDATASEG
   dbuff DD (SCRW*SCRH)/4 DUP(?)
-  filebuff DD (SCRW*SCRH)/4 DUP(?)
+  filebuff DD (SCRW*SCRH)/4+(2*2) DUP(?)
 
 ; ----------------------------------------------------------
 ; STACK
