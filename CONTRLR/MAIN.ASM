@@ -61,26 +61,6 @@ PROC actionHandler
     RET
 ENDP actionHandler
 
-PROC physicsHandlerPrev
-  USES EAX
-
-  MOV EAX, [player.vx]
-  ADD EAX, [player.x]
-  MOV [player.x], EAX
-  MOV [player.vx], 0
-  
-  MOV EAX, [player.vy]
-  ADD EAX, [player.y]
-  CMP EAX, FLOOR
-  JG @@end
-  MOV [player.y], EAX
-  INC [player.vy] 			;gravity
-
-  @@end:
-
-    RET
-ENDP physicsHandlerPrev
-
 PROC physicsHandler
   USES EAX, EBX
 
@@ -166,7 +146,7 @@ PROC main
   CALL setVideoMode, 13H
   CALL updateColourPalette, 6
   CALL fillBackground, 00H
-  CALL draw, OFFSET level, 0, 0
+  CALL draw, OFFSET level, 0, 0, 16, 10
 
   @@gameLoop:
     CALL keyboardHandler

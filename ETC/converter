@@ -41,8 +41,8 @@ def main(argv):
    print(height)
 
    with open(outputfile, 'wb') as output: # Convert pixels one by one to corresponding binairy in the palette
-        output.write(width.to_bytes(1, 'big'))
-        output.write(height.to_bytes(1, 'big'))
+        #output.write(width.to_bytes(1, 'big'))
+        #output.write(height.to_bytes(1, 'big'))
         for h in range(height):
             for w in range(width):
                 r, g, b = map(lambda n : n >> 2, pixels[w, h]) # shift pixel color from 8bit to 6bit color
