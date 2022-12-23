@@ -17,11 +17,11 @@ def main(argv):
    try:
       opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
    except getopt.GetoptError:
-      print('USAGE:\n\tconverter.py -i <inputfile> -o <outputfile>')
+      print('USAGE:\n\tconverter -i <inputfile> -o <outputfile>')
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
-         print('converter.py -i <inputfile> -o <outputfile>')
+         print('converter -i <inputfile> -o <outputfile>')
          sys.exit()
       elif opt in ("-i", "--input"):
          inputfile = arg
@@ -32,11 +32,10 @@ def main(argv):
    img_png = Image.open(inputfile) 
    pixels = img_png.load()  # load image in to an array of pixels
    width, height = img_png.size
-   print(width)
-   print("x")
-   print(height)
 
    with open(outputfile, 'wb') as output: # Convert pixels one by one to corresponding binairy in the palette
+        output.write(width.to_bytes(2, 'big'))  # write width to file
+        output.write(height.to_bytes(2, 'big')) # write height to file
         for h in range(height):
             for w in range(width):
                 r, g, b = map(lambda n : n >> 2, pixels[w, h]) # shift pixel color from 8bit to 6bit color
