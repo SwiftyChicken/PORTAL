@@ -114,18 +114,18 @@ PROC fillBackground
 
 ENDP fillBackground
 
-PROC draw
-  ARG @@image:DWORD, @@column:DWORD, @@row:DWORD
-  USES ESI, EDI, ECX, EAX, EBX, EDX
+PROC loadFile
+	ARG @@fileName:DWORD
+	USES EAX, EBX, EDX 
 
 	; open bin file, get filehandle in AX
 	MOV AL, 0 ; read only
-	MOV EDX, [@@image]
+	MOV EDX, [@@fileName]
 	MOV AH, 3DH
 	INT 21H
 
 	MOV  EDX, OFFSET openErrorMsg
-	JC @@print_error ; carry flag is set if error occurs
+	JC @@error ; carry flag is set if error occurs
 
 	; read bin file data
 	MOV BX, AX ; move filehandle to bx
@@ -135,15 +135,31 @@ PROC draw
 	INT 21H
 
 	MOV  EDX, OFFSET readErrorMsg
-	JC @@print_error
+	JC @@error
 
 	; close bin file
 	MOV AH, 3EH
 	INT 21H
 
 	MOV  EDX, OFFSET closeErrorMsg
-	JC @@print_error
+	JC @@error
 	
+	MOV ECX, 1		; succes
+	RET
+
+	@@error:
+	MOV ECX, 0		; error
+	RET
+
+ENDP loadFile
+
+PROC draw
+  ARG @@image:DWORD, @@column:DWORD, @@row:DWORD
+  USES ESI, EDI, ECX, EAX, EBX, EDX
+
+	CALL loadFile, [@@image] 
+	JCXZ @@printError
+
   ; Set up Index registers
   MOV ESI, OFFSET filebuff
   MOV EDI, OFFSET dbuff
@@ -186,7 +202,7 @@ PROC draw
     
     RET
 
-@@print_error:
+@@printError:
 	call setVideoMode, 03h
 	mov  ah, 09h
 	int  21h
