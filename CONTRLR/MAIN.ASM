@@ -146,13 +146,13 @@ PROC main
   CALL setVideoMode, 13H
   CALL updateColourPalette, 6
   CALL fillBackground, 00H
-  CALL draw, OFFSET level, 0, 0
+  CALL draw, OFFSET current, 0, 0
 
   @@gameLoop:
     CALL keyboardHandler
     CALL physicsHandler
     CALL fillBackground, 00H
-    CALL draw, OFFSET level, 0, 0
+    CALL draw, OFFSET current, 0, 0
     CALL draw, OFFSET character, [player.x], [player.y]
     CALL waitVBI
     CALL updateVideoBuffer
@@ -170,6 +170,7 @@ DATASEG
   player    Player  <20, FLOOR>
   
   level DB "VIEW/IMG/LVL1.BIN", 0	
+  current DB "VIEW/IMG/LEVEL.BIN", 0	
   
   character DB "VIEW/IMG/PLAYER.BIN", 0
 
