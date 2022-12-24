@@ -17,7 +17,7 @@ model = OBJ\PHYSICS.OBJ
 controler = OBJ\MAIN.OBJ
 
 objs = $(lib) $(model) $(view) $(controler) 
-dest = portal.exe
+dest = PORTAL.EXE
 
 # =============================================================================
 # Do NOT edit this section, unless you know what you are doing.
