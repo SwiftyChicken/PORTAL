@@ -48,9 +48,10 @@ PROC actionHandler
     JMP @@end
 
   @@up:
-    CMP [player.vy], 0
-    JLE @@end
+    CMP [player.jumping], 0
+    JNE @@end
     SUB [player.vy], 5
+    MOV [player.jumping], 1
 
   @@end:
     RET
