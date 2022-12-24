@@ -10,16 +10,18 @@ LINK = wlink
 AFLAGS = /ml /m2 /w2 /z /zi /t
 LFLAGS = option quiet system pmodew name $@ file   
 
-model = model\keyb.obj
-view = view\draw.obj
-controler = contrlr\main.obj
+lib = LIB\*.OBJ 
+view = VIEW\*.OBJ
+model = MODEL\*.OBJ
+controler = CONTRLR\*.OBJ
 
-objs = $(model) $(view) $(controler)
+objs = $(lib) $(view) $(controler) #$(model) 
 dest = portal.exe
 
 # =============================================================================
 # Do NOT edit this section, unless you know what you are doing.
 # =============================================================================
+.asm: LIB/
 .asm: MODEL/
 .asm: VIEW/
 .asm: CONTRLR/
@@ -32,6 +34,7 @@ $(dest): $(objs)
   $(LINK) $(LFLAGS) {$(objs)}
 
 clean: .symbolic 
+  del LIB\*.obj
   del MODEL\*.obj
   del CONTRLR\*.obj
   del VIEW\*.obj
