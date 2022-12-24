@@ -1,15 +1,15 @@
 ;-------------------------------------------------------------------
 ; MODEL/PHYSICS
 ;-------------------------------------------------------------------
-FLOOR EQU 42
+FLOOR EQU 40
 LEVEL_SIZE EQU 16*10
 BLOCK_SIZE EQU 5
 
 STRUC Player
   x dd ?
   y dd ?
-  vx dd ?
-  vy dd ?
+  vx dd 0
+  vy dd 0
 ENDS Player
 
 GLOBAL physicsHandler:PROC

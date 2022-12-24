@@ -18,69 +18,100 @@ INCLUDE "INC/PHYSICS.INC"
 CODESEG
 
 PROC physicsHandler
-  USES EAX
+  USES EAX, EDX
 
   MOV EAX, [player.vx]
   ADD EAX, [player.x]
-  MOV [player.x], EAX
-  MOV [player.vx], 0
+
+  CALL checkAABB, EAX, [player.y]
+  CMP DL, 00H
+  JNE @@dont_move_x
+    MOV [player.x], EAX
+  @@dont_move_x:
+    MOV [player.vx], 0
   
   MOV EAX, [player.vy]
   ADD EAX, [player.y]
-  CMP EAX, FLOOR
-  JG @@end
-  MOV [player.y], EAX
-  INC [player.vy] 			;gravity
+
+  CALL checkAABB, [player.x], EAX
+  CMP DL, 00H
+  JNE @@dont_move_y
+    MOV [player.y], EAX
+    INC [player.vy]
+    JMP @@end
+  @@dont_move_y:
+    MOV [player.vy], 0
 
   @@end:
-
     RET
 ENDP physicsHandler
 
+PROC checkAABB
+	ARG @@x0:DWORD, @@y0:DWORD
+	USES EAX, EBX
+
+	MOV EAX, [@@x0]
+	ADD EAX, BLOCK_SIZE - 1
+	MOV EBX, [@@y0]
+	ADD EBX, BLOCK_SIZE - 1
+
+  CALL collisionHandler, [@@x0], [@@y0]
+  CMP DL, 00H
+  JNE @return
+
+  CALL collisionHandler, EAX, [@@y0]
+  CMP DL, 00H
+  JNE @return
+
+  CALL collisionHandler, [@@x0], EBX
+  CMP DL, 00H
+  JNE @return
+
+  CALL collisionHandler, EAX, EBX
+
+  @return:
+    RET
+ENDP checkAABB
+
 PROC collisionHandler ; checkt lvl en lijst met portals
 	ARG @@x0:DWORD, @@y0:DWORD
-	USES EAX, EBX, EDI  ; return value in ECX
+	USES EAX, EBX
 
-	;MOV EDI, 5		; size block
-	;CALL loadFile, OFFSET return
+  ;; Check for out of bound
+  CMP [@@x0], 0
+  JL @outOfBound
 
-	;MOV EAX, [@@y0]
-	;DIV EDI
-	;SHL EAX, 4		; times 16 = levelmatrix width
-	;MOV EBX, EAX
+  CMP [@@x0], 80
+  JG @outOfBound
 
-	;MOV EAX, [@@x0]
-	;DIV EDI
-	;CMP EAX, 0		; left out of bounds
-	;JNG @@return0 
-	;CMP EAX, 15 	; right out of bounds
-	;JG @@return3
-	
-	;ADD EAX, EBX	; coord offset in EAX
+  CMP [@@y0], 0
+  JL @outOfBound
 
-	;MOV EAX, [OFFSET current + EAX]
-	;CMP EAX, 0000
-	;JE @@return1
-	JMP @@return1
+  CMP [@@y0], 50
+  JG @outOfBound
 
-	; CMP EAX,	; test for portal 
-	; JE @@return2
+  ; CONVERT Y: 80x50 -> 16x10
+	MOV EAX, [@@y0]
+	MOV EBX, BLOCK_SIZE
+  LEA EDX, [0]          ;Clear EDX
+	DIV EBX
+	IMUL EAX, 16
+	PUSH EAX
 
-	@@return0:		; don't move, wall collision
-		MOV ECX, 0
-		RET
+  ;; CONVERT X in EAX: 80x50 -> 16x10
+	MOV EAX, [@@x0]
+	MOV EBX, BLOCK_SIZE
+  LEA EDX, [0]          ;Clear EDX
+	DIV EBX
+	POP EBX
+	ADD EAX, EBX
 
-	@@return1:		; move, no collision
-		MOV ECX, 1
-		RET
+  MOV DL, [OFFSET level + EAX]
+  RET
 
-	@@return2:		; trigger, portal
-		MOV ECX, 2
-		RET
-
-	@@return3:		; trigger, elevator (end of level)
-		MOV ECX, 3
-		RET
+  @outOfBound:
+    MOV DL, 01H
+    RET
 
 ENDP collisionHandler 
 
@@ -95,7 +126,7 @@ ENDP
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-  player  Player  <20, FLOOR>
+  player  Player  <5, FLOOR>
 
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
