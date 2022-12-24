@@ -7,37 +7,37 @@
 ASM = tasm
 LINK = wlink
 
+# use TASM with debug info (stripped anyway by wlink if not used)
 AFLAGS = /ml /m2 /w2 /z /zi /t
 LFLAGS = option quiet system pmodew name $@ file   
 
-model = model\keyb.obj
-view = view\draw.obj
-controler = contrlr\main.obj
+lib = OBJ\KEYB.OBJ OBJ\FILE.OBJ 
+view = OBJ\DRAW.OBJ
+model = OBJ\PHYSICS.OBJ
+controler = OBJ\MAIN.OBJ
 
-objs = $(model) $(view) $(controler)
+objs = $(lib) $(model) $(view) $(controler) 
 dest = portal.exe
 
 # =============================================================================
 # Do NOT edit this section, unless you know what you are doing.
 # =============================================================================
+.asm: LIB/
 .asm: MODEL/
 .asm: VIEW/
 .asm: CONTRLR/
 .asm.obj:
-  # use TASM with debug info (stripped anyway by wlink if not used)
   del $@
-  $(ASM) $(AFLAGS) $< $@ 
+  $(ASM) $(AFLAGS) $< $@
 
 $(dest): $(objs)
-  $(LINK) $(LFLAGS) {$(objs)}
+  $(LINK) $(LFLAGS) OBJ\*.obj
 
 clean: .symbolic 
-  del MODEL\*.obj
-  del CONTRLR\*.obj
-  del VIEW\*.obj
+  del OBJ\*.obj
   del $(dest)
 
 .silent
 debug: $(objs) .symbolic
-  wlink debug watcom all option quiet system pmodew name $(dest) file {$(objs)}
+  wlink debug watcom all option quiet system pmodew name $(dest) file OBJ\*.obj
   wd /tr=rsi /li=43 $(dest)
