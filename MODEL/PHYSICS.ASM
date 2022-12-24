@@ -41,6 +41,7 @@ PROC physicsHandler
     INC [player.vy]
     JMP @@end
   @@reset_y:
+    MOV [player.vy], 1
     MOV EAX, [player.y]
     INC EAX
 
@@ -138,7 +139,7 @@ ENDP
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-  player  Player  <5, FLOOR>
+  player  Player  <40, 20>
 
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA

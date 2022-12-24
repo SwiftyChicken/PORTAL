@@ -28,7 +28,21 @@ CODESEG
 
 ;;;;;;;;;;;;;;;;;;;;; GENERAL IO ;;;;;;;;;;;;;;;;;;;;;;;;::::
 
-PROC actionHandler
+PROC releaseHandler
+  ARG @@key:DWORD
+
+	CMP	AL, 48H
+  JE @@up
+  JMP @@end
+
+  @@up:
+    MOV [up_pressed], 00H
+
+  @@end:
+  RET
+ENDP releaseHandler
+
+PROC pressHandler
   ARG @@key:DWORD
   
 	CMP	AL, 4BH
@@ -48,16 +62,19 @@ PROC actionHandler
     JMP @@end
 
   @@up:
+    CMP [up_pressed], 00H 
+    JNE @@end
     CMP [player.jumping], 0
     JNE @@end
     MOV [player.jumping], 1
     CMP [player.vy], 0
     JNE @@end
     MOV [player.vy], -5
+    MOV [up_pressed], 01H
 
   @@end:
     RET
-ENDP actionHandler
+ENDP pressHandler
 
 PROC keyboardHandler
   USES EAX, ECX, ESI
@@ -71,11 +88,19 @@ PROC keyboardHandler
     MOVZX EAX, AL
     MOV BL, [offset __keyb_keyboardState + EAX]
     CMP BL, 1
-    LODSB
-    JNE @@skip
-    CALL actionHandler
+    JE @@pressed
+    CMP BL, 0
+    JE @@release
+    JMP @@next
+    @@pressed:
+      LODSB
+      CALL pressHandler
+      JMP @@next
+    @@release:
+      LODSB
+      CALL releaseHandler
 
-    @@skip:
+    @@next:
     LOOP @@loop
     
   RET
@@ -140,7 +165,13 @@ DATASEG
               DB 75, 4BH  ; left key
               DB 77, 4DH  ; right key
               DB 72, 48H  ; up key
-  
+
+;-----------------------------------------------------------
+; UNSIGNED DATA
+;-----------------------------------------------------------
+UDATASEG
+  up_pressed DB ?
+
 ; ----------------------------------------------------------
 ; STACK
 ; ----------------------------------------------------------
