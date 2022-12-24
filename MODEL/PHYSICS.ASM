@@ -35,12 +35,24 @@ PROC physicsHandler
 
   CALL checkAABB, [player.x], EAX
   CMP DL, 00H
-  JNE @@dont_move_y
+  JNE @@reset_y
     MOV [player.y], EAX
     INC [player.vy]
     JMP @@end
+  @@reset_y:
+    MOV [player.vy], 1
+
+    MOV EAX, [player.vy]
+    ADD EAX, [player.y]
+
+    CALL checkAABB, [player.x], EAX
+    CMP DL, 00H
+    JNE @@dont_move_y
+    MOV [player.y], EAX
+
   @@dont_move_y:
     MOV [player.vy], 0
+    MOV [player.jumping], 0
 
   @@end:
     RET

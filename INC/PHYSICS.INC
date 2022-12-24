@@ -10,6 +10,7 @@ STRUC Player
   y dd ?
   vx dd 0
   vy dd 0
+  jumping dd 0
 ENDS Player
 
 GLOBAL physicsHandler:PROC
