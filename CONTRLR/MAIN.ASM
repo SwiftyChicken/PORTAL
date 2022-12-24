@@ -71,12 +71,13 @@ PROC physicsHandler
   ADD EBX, [player.y]
 
 	CALL collisionHandler, EAX, EBX
-		MOV [player.x], EAX				 ; move player
+		JCXZ @@dontMove 			; don't move if ECX is 0
+		MOV [player.x], EAX	  ; move player
 		MOV [player.vx], 0
 
 		CMP EBX, FLOOR
 		JG @@dontMove
-		MOV [player.y], EBX 			 ; move player
+		MOV [player.y], EBX   ; move player
 		INC [player.vy] ; gravity
 
 	@@dontMove:
@@ -84,17 +85,54 @@ PROC physicsHandler
     RET
 ENDP physicsHandler
 
+
 ;; TO DO
-PROC collisionHandler
+PROC collisionHandler ; checkt lvl en lijst met portals
 	ARG @@x0:DWORD, @@y0:DWORD
-	USES EAX, EBX
+	USES EAX, EBX, EDI  ; return value in ECX
 
-	MOV EAX, [@@x0]
-	MOV EBX, [@@y0]
+	;MOV EDI, 5		; size block
+	;CALL loadFile, OFFSET return
 
-	RET
+	;MOV EAX, [@@y0]
+	;DIV EDI
+	;SHL EAX, 4		; times 16 = levelmatrix width
+	;MOV EBX, EAX
+
+	;MOV EAX, [@@x0]
+	;DIV EDI
+	;CMP EAX, 0		; left out of bounds
+	;JNG @@return0 
+	;CMP EAX, 15 	; right out of bounds
+	;JG @@return3
+	
+	;ADD EAX, EBX	; coord offset in EAX
+
+	;MOV EAX, [OFFSET current + EAX]
+	;CMP EAX, 0000
+	;JE @@return1
+	JMP @@return1
+
+	; CMP EAX,	; test for portal 
+	; JE @@return2
+
+	@@return0:		; don't move, wall collision
+		MOV ECX, 0
+		RET
+
+	@@return1:		; move, no collision
+		MOV ECX, 1
+		RET
+
+	@@return2:		; trigger, portal
+		MOV ECX, 2
+		RET
+
+	@@return3:		; trigger, elevator (end of level)
+		MOV ECX, 3
+		RET
+
 ENDP collisionHandler 
-
 
 ;;;;;;;;;;;;;;;;;;;;; GENERAL IO ;;;;;;;;;;;;;;;;;;;;;;;;::::
 
