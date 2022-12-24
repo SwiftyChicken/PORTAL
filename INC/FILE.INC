@@ -2,6 +2,6 @@
 ; LIB/FILE.ASM
 ;-------------------------------------------------------------------
 
-;GLOBAL setVideoMode:PROC
+GLOBAL loadFile:PROC
 
 ;GLOBAL dbuff:DWORD:16000
