@@ -49,6 +49,7 @@ PROC physicsHandler
     CMP DL, 00H
     JNE @@dont_move_y
     MOV [player.y], EAX
+    JMP @@reset_y
 
   @@dont_move_y:
     MOV [player.vy], 0
