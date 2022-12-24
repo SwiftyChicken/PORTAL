@@ -11,13 +11,15 @@ palette = {(63, 63, 63): 0,  #background
 def main(argv):
    inputfile = ''
    outputfile = ''
+   isLevel = False
 
    # HANDLE FLAGS
    # -h: print command format
    # -i: name of png file that need to be converted
    # -o: name of the output binary file that you want to create
+   # -l: check if given file is a level image
    try:
-      opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+      opts, args = getopt.getopt(argv,"hi:o:l",["ifile=","ofile="])
    except getopt.GetoptError:
       print('USAGE:\n\tconverter -i <inputfile> -o <outputfile>')
       sys.exit(2)
@@ -29,6 +31,8 @@ def main(argv):
          inputfile = arg
       elif opt in ("-o", "--output"):
          outputfile = arg
+      elif opt in ("-l", "--level"):
+         isLevel = True
 
    # CODE TO GENERATE BINAIRY
    img_png = Image.open(inputfile) 
@@ -36,8 +40,9 @@ def main(argv):
    width, height = img_png.size
 
    with open(outputfile, 'wb') as output: # Convert pixels one by one to corresponding binairy in the palette
-        output.write(height.to_bytes(2, 'little')) # write height to file
-        output.write(width.to_bytes(2, 'little'))  # write width to file
+        if not isLevel:
+            output.write(height.to_bytes(2, 'little')) # write height to file
+            output.write(width.to_bytes(2, 'little'))  # write width to file
         for h in range(height):
             for w in range(width):
                 r, g, b = map(lambda n : n >> 2, pixels[w, h]) # shift pixel color from 8bit to 6bit color
