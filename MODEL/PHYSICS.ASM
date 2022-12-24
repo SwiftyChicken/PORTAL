@@ -18,7 +18,7 @@ INCLUDE "INC/PHYSICS.INC"
 CODESEG
 
 PROC physicsHandler
-  USES EAX, EDX
+  USES EAX, EBX, EDX
 
   MOV EAX, [player.vx]
   ADD EAX, [player.x]
@@ -31,6 +31,7 @@ PROC physicsHandler
     MOV [player.vx], 0
   
   MOV EAX, [player.vy]
+  SAR EAX, 1
   ADD EAX, [player.y]
 
   CALL checkAABB, [player.x], EAX
@@ -40,16 +41,14 @@ PROC physicsHandler
     INC [player.vy]
     JMP @@end
   @@reset_y:
-    MOV [player.vy], 1
-
-    MOV EAX, [player.vy]
-    ADD EAX, [player.y]
+    MOV EAX, [player.y]
+    INC EAX
 
     CALL checkAABB, [player.x], EAX
     CMP DL, 00H
     JNE @@dont_move_y
     MOV [player.y], EAX
-    JMP @@reset_y
+    JMP @@end
 
   @@dont_move_y:
     MOV [player.vy], 0
