@@ -115,7 +115,7 @@ PROC fillBackground
 ENDP fillBackground
 
 PROC loadFile
-	ARG @@fileName:DWORD, @@fileBuffer
+	ARG @@fileName:DWORD, @@fileBuffer:DWORD, @@size:DWORD
 	USES EAX, EBX, EDX 
 
 	; open bin file, get filehandle in AX
@@ -129,7 +129,7 @@ PROC loadFile
 
 	; read bin file data
 	MOV BX, AX ; move filehandle to bx
-	MOV ECX, FBUFF_SIZE
+	MOV ECX, [@@size]
 	MOV EDX, [@@fileBuffer]
 	MOV AH, 3FH
 	INT 21H
@@ -166,7 +166,7 @@ PROC draw
   ARG @@image:DWORD, @@column:DWORD, @@row:DWORD
   USES ESI, EDI, ECX, EAX, EBX, EDX
 
-	CALL loadFile, [@@image], OFFSET filebuff
+	CALL loadFile, [@@image], OFFSET filebuff, FBUFF_SIZE
 
   ; Set up Index registers
   MOV ESI, OFFSET filebuff
