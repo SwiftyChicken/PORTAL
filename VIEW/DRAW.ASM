@@ -115,7 +115,7 @@ PROC fillBackground
 ENDP fillBackground
 
 PROC loadFile
-	ARG @@fileName:DWORD
+	ARG @@fileName:DWORD, @@fileBuffer
 	USES EAX, EBX, EDX 
 
 	; open bin file, get filehandle in AX
@@ -130,7 +130,7 @@ PROC loadFile
 	; read bin file data
 	MOV BX, AX ; move filehandle to bx
 	MOV ECX, FBUFF_SIZE
-	MOV EDX, OFFSET filebuff
+	MOV EDX, [@@fileBuffer]
 	MOV AH, 3FH
 	INT 21H
 
@@ -151,14 +151,22 @@ PROC loadFile
 	MOV ECX, 0		; error
 	RET
 
+  @@printError:
+	  CALL setVideoMode, 03H
+	  MOV  AH, 09H
+	  INT  21H
+	  
+	  MOV	AH,00H
+	  INT	16H
+
+    RET
 ENDP loadFile
 
 PROC draw
   ARG @@image:DWORD, @@column:DWORD, @@row:DWORD
   USES ESI, EDI, ECX, EAX, EBX, EDX
 
-	CALL loadFile, [@@image] 
-	JCXZ @@printError
+	CALL loadFile, [@@image], OFFSET filebuff
 
   ; Set up Index registers
   MOV ESI, OFFSET filebuff
@@ -201,17 +209,6 @@ PROC draw
     LOOP @@nextLine
     
     RET
-
-@@printError:
-	call setVideoMode, 03h
-	mov  ah, 09h
-	int  21h
-	
-	mov	ah,00h
-	int	16h
-
-  RET
-
 ENDP draw
 
 ;;;;;;;;;;;;;;;;;;;;; AUXILIARY PROCS ;;;;;;;;;;;;;;;;;;;;;;;
