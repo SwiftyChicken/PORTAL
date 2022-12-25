@@ -3,5 +3,4 @@
 ;-------------------------------------------------------------------
 
 GLOBAL loadFile:PROC
-
-;GLOBAL dbuff:DWORD:16000
+GLOBAL generateFile:PROC
