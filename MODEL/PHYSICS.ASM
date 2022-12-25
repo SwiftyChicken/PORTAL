@@ -109,7 +109,7 @@ PROC collisionHandler ; checkt lvl en lijst met portals
   CMP [@@y0], START_BOUNDRY
   JL @outOfBound
 
-  CMP [@@y0], HEIGTH_BOUNDRY
+  CMP [@@y0], HEIGHT_BOUNDRY
   JG @outOfBound
 
   ; CONVERT Y: 80x50 -> 16x10
