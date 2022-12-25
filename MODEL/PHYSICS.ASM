@@ -100,16 +100,16 @@ PROC collisionHandler ; checkt lvl en lijst met portals
 	USES EAX, EBX
 
   ;; Check for out of bound
-  CMP [@@x0], 0
+  CMP [@@x0], START_BOUNDRY
   JL @outOfBound
 
-  CMP [@@x0], 80
+  CMP [@@x0], WIDTH_BOUNDRY
   JG @outOfBound
 
-  CMP [@@y0], 0
+  CMP [@@y0], START_BOUNDRY
   JL @outOfBound
 
-  CMP [@@y0], 50
+  CMP [@@y0], HEIGTH_BOUNDRY
   JG @outOfBound
 
   ; CONVERT Y: 80x50 -> 16x10
