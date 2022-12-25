@@ -29,48 +29,38 @@ CODESEG
 ;;;;;;;;;;;;;;;;;;;;; GENERAL IO ;;;;;;;;;;;;;;;;;;;;;;;;::::
 
 PROC releaseHandler
-  ARG @@key:DWORD
-
-	CMP	AL, 48H
-  JE @@up
-  JMP @@end
-
-  @@up:
-    MOV [up_pressed], 00H
-
-  @@end:
   RET
 ENDP releaseHandler
 
 PROC pressHandler
-  ARG @@key:DWORD
-  
 	CMP	AL, 4BH
   JE @@left
+
 	CMP	AL, 4DH
   JE @@right
+  
 	CMP	AL, 48H
   JE @@up
+
   JMP @@end
 
   @@left:
+    MOV [player.direction], LEFT
     SUB [player.vx], 1
     JMP @@end
 
   @@right:
+    MOV [player.direction], RIGHT
     ADD [player.vx], 1
     JMP @@end
 
   @@up:
-    CMP [up_pressed], 00H 
-    JNE @@end
     CMP [player.jumping], 0
     JNE @@end
     MOV [player.jumping], 1
     CMP [player.vy], 0
     JNE @@end
     MOV [player.vy], -5
-    MOV [up_pressed], 01H
 
   @@end:
     RET
@@ -96,6 +86,7 @@ PROC keyboardHandler
       LODSB
       CALL pressHandler
       JMP @@next
+
     @@release:
       LODSB
       CALL releaseHandler
@@ -140,7 +131,13 @@ PROC main
     CALL physicsHandler
     CALL fillBackground, 00H
     CALL draw, OFFSET current, 0, 0
-    CALL draw, OFFSET character, [player.x], [player.y]
+    CMP [player.direction], RIGHT
+    JE @@right
+      CALL draw, OFFSET character_L, [player.x], [player.y]
+      JMP @@next
+    @@right:
+      CALL draw, OFFSET character_R, [player.x], [player.y]
+    @@next:
     CALL waitVBI
     CALL updateVideoBuffer
 	  MOV AL, [__keyb_rawScanCode] ; last pressed key
@@ -158,7 +155,10 @@ DATASEG
   ;; IMAGES FILES
   level DB "VIEW/IMG/LVL1.BIN", 0	
   current DB "VIEW/IMG/LEVEL.BIN", 0	
-  character DB "VIEW/IMG/PLAYER.BIN", 0
+  character_R DB "VIEW/IMG/P_R.BIN", 0
+  character_L DB "VIEW/IMG/P_L.BIN", 0
+
+
 
   ; keys to be tracked
   keytracker  DW 3        ; amount of keys to track
