@@ -31,26 +31,34 @@ PROC physicsHandler
   @@dont_move_x:
     MOV [player.vx], 0
   
-  MOV EAX, [player.vy]
-  SAR EAX, 1
-  ADD EAX, [player.y]
-
-  CALL checkCollision, [player.x], EAX
-  CMP DL, FALSE
-  JNE @@reset_y
-    MOV [player.y], EAX
-    INC [player.vy]
-    JMP @@end
-  @@reset_y:
-    MOV [player.vy], 1
-    MOV EAX, [player.y]
-    INC EAX
+  @@move_y:
+    MOV EAX, [player.vy]
+    SAR EAX, SLOW_DOWN      ; Slown down vertical movement
+    ADD EAX, [player.y]
 
     CALL checkCollision, [player.x], EAX
     CMP DL, FALSE
-    JNE @@dont_move_y
-    MOV [player.y], EAX
-    JMP @@end
+    JNE @@slow_down_y
+      MOV [player.y], EAX
+      INC [player.vy]
+      JMP @@end
+  @@slow_down_y:
+    CMP [player.vy], 0
+    JL @@slow_up
+    CMP [player.vy], 0
+    JG @@slow_down
+    
+    @@slow_up:
+      INC [player.vy]
+      JMP @@move_y
+
+    @@slow_down:
+      DEC [player.vy]
+      MOV EAX, [player.vy]
+      SAR EAX, SLOW_DOWN
+      CMP EAX, 0  ;IF 0 it has hit the ground
+      JE @@dont_move_y
+      JMP @@move_y
 
   @@dont_move_y:
     MOV [player.vy], 0
