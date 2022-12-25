@@ -58,7 +58,7 @@ PROC pressHandler
     CMP [player.vy], 0
     JNE @@end
     MOV [player.vy], -5
-    MOV [up_pressed], 01H
+    MOV [up_pressed], TRUE
 
   @@end:
     RET
@@ -75,9 +75,9 @@ PROC keyboardHandler
     LODSB
     MOVZX EAX, AL
     MOV BL, [offset __keyb_keyboardState + EAX]
-    CMP BL, 1
+    CMP BL, TRUE
     JE @@pressed
-    CMP BL, 0
+    CMP BL, FALSE
     JE @@release
     JMP @@next
     @@pressed:
