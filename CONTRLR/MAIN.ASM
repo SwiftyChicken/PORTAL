@@ -30,12 +30,10 @@ CODESEG
 ;;;;;;;;;;;;;;;;;;;;; GENERAL IO ;;;;;;;;;;;;;;;;;;;;;;;;::::
 
 PROC releaseHandler
-  ARG @@key:DWORD
   RET
 ENDP releaseHandler
 
 PROC pressHandler
-  ARG @@key:DWORD
   
 	CMP	AL, 4BH
   JE @@left
