@@ -9,6 +9,7 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 ;-----------------------------------------------------------
 ; INCLUDE
 ;-----------------------------------------------------------
+INCLUDE "INC/STD.INC"
 INCLUDE "INC/KEYB.INC"
 INCLUDE "INC/DRAW.INC"
 INCLUDE "INC/PHYSICS.INC"
@@ -55,9 +56,9 @@ PROC pressHandler
     JMP @@end
 
   @@up:
-    CMP [player.jumping], 0
+    CMP [player.jumping], FALSE
     JNE @@end
-    MOV [player.jumping], 1
+    MOV [player.jumping], TRUE
     CMP [player.vy], 0
     JNE @@end
     MOV [player.vy], -5

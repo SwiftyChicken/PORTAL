@@ -11,7 +11,7 @@ LINK = wlink
 AFLAGS = /ml /m2 /w2 /z /zi /t
 LFLAGS = option quiet system pmodew name $@ file   
 
-lib = OBJ\KEYB.OBJ OBJ\FILE.OBJ 
+lib = OBJ\KEYB.OBJ OBJ\FILE.OBJ OBJ\STD.OBJ
 view = OBJ\DRAW.OBJ
 model = OBJ\PHYSICS.OBJ
 controler = OBJ\MAIN.OBJ
