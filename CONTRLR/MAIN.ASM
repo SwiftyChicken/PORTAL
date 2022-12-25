@@ -9,6 +9,7 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 ;-----------------------------------------------------------
 ; INCLUDE
 ;-----------------------------------------------------------
+INCLUDE "INC/STD.INC"
 INCLUDE "INC/KEYB.INC"
 INCLUDE "INC/DRAW.INC"
 INCLUDE "INC/PHYSICS.INC"
@@ -30,15 +31,6 @@ CODESEG
 
 PROC releaseHandler
   ARG @@key:DWORD
-
-	CMP	AL, 48H
-  JE @@up
-  JMP @@end
-
-  @@up:
-    MOV [up_pressed], 00H
-
-  @@end:
   RET
 ENDP releaseHandler
 
@@ -62,11 +54,9 @@ PROC pressHandler
     JMP @@end
 
   @@up:
-    CMP [up_pressed], 00H 
+    CMP [player.jumping], FALSE
     JNE @@end
-    CMP [player.jumping], 0
-    JNE @@end
-    MOV [player.jumping], 1
+    MOV [player.jumping], TRUE
     CMP [player.vy], 0
     JNE @@end
     MOV [player.vy], -5

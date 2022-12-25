@@ -9,6 +9,7 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 ;-----------------------------------------------------------
 ; INCLUDE
 ;-----------------------------------------------------------
+INCLUDE "INC/STD.INC"
 INCLUDE "INC/FILE.INC"
 INCLUDE "INC/PHYSICS.INC"
 
@@ -23,8 +24,8 @@ PROC physicsHandler
   MOV EAX, [player.vx]
   ADD EAX, [player.x]
 
-  CALL checkAABB, EAX, [player.y]
-  CMP DL, 00H
+  CALL checkCollision, EAX, [player.y]
+  CMP DL, FALSE
   JNE @@dont_move_x
     MOV [player.x], EAX
   @@dont_move_x:
@@ -34,8 +35,8 @@ PROC physicsHandler
   SAR EAX, 1
   ADD EAX, [player.y]
 
-  CALL checkAABB, [player.x], EAX
-  CMP DL, 00H
+  CALL checkCollision, [player.x], EAX
+  CMP DL, FALSE
   JNE @@reset_y
     MOV [player.y], EAX
     INC [player.vy]
@@ -45,8 +46,8 @@ PROC physicsHandler
     MOV EAX, [player.y]
     INC EAX
 
-    CALL checkAABB, [player.x], EAX
-    CMP DL, 00H
+    CALL checkCollision, [player.x], EAX
+    CMP DL, FALSE
     JNE @@dont_move_y
     MOV [player.y], EAX
     JMP @@end
@@ -59,7 +60,7 @@ PROC physicsHandler
     RET
 ENDP physicsHandler
 
-PROC checkAABB
+PROC checkCollision
 	ARG @@x0:DWORD, @@y0:DWORD
 	USES EAX, EBX
 
@@ -69,22 +70,22 @@ PROC checkAABB
 	ADD EBX, BLOCK_SIZE - 1
 
   CALL collisionHandler, [@@x0], [@@y0]
-  CMP DL, 00H
+  CMP DL, FALSE
   JNE @return
 
   CALL collisionHandler, EAX, [@@y0]
-  CMP DL, 00H
+  CMP DL, FALSE
   JNE @return
 
   CALL collisionHandler, [@@x0], EBX
-  CMP DL, 00H
+  CMP DL, FALSE
   JNE @return
 
   CALL collisionHandler, EAX, EBX
 
   @return:
     RET
-ENDP checkAABB
+ENDP checkCollision
 
 PROC collisionHandler ; checkt lvl en lijst met portals
 	ARG @@x0:DWORD, @@y0:DWORD
