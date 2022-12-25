@@ -13,10 +13,10 @@ FBH EQU 50	; screen height
 SCALE EQU 4  ; image scale
 FLOOR EQU 42
 BLOCK_LEN EQU 5
-DBUFF_SIZE EQU (FBH*FBW)/4
-FBUFF_SIZE EQU DBUFF_SIZE+2
-SBUFF_SIZE EQU DBUFF_SIZE/5
-SPRITE_BUFF_SIZE EQU BLOCK_LEN*BLOCK_LEN
+DBUFF_SIZE EQU SCRW*SCRH                 ; Doublebuffer (= Size screen)
+FBUFF_SIZE EQU (FBH*FBW)+2*2             ; Size maximum image file + 2 DW (= size image)
+SBUFF_SIZE EQU (FBH*FBW)/5               ; Size of LVL#.BIN
+SPRITE_BUFF_SIZE EQU BLOCK_LEN*BLOCK_LEN ; Size of a LEVEL.BIN block
 
 ;-----------------------------------------------------------
 ; STRUC

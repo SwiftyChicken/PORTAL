@@ -10,17 +10,6 @@ INCLUDE "INC/DRAW.INC"
 INCLUDE "INC/FILE.INC"
 
 ;-----------------------------------------------------------
-; MACROS
-;-----------------------------------------------------------
-FBADR EQU 0A0000h	; video memory address
-SCRW EQU 320	; screen witdth
-SCRH EQU 200	; screen height
-SCALE EQU 4  ; image scale
-FLOOR EQU 42
-DBUFF_SIZE EQU (SCRW*SCRH)/4
-FBUFF_SIZE EQU DBUFF_SIZE+2
-
-;-----------------------------------------------------------
 ; CODE
 ;-----------------------------------------------------------
 CODESEG
@@ -167,6 +156,16 @@ PROC draw
     RET
 ENDP draw
 
+PROC updateLevel
+  ARG @@newLevel:DWORD
+  USES ESI, EDI, ECX, EAX, EBX, EDX
+
+	CALL loadFile, [@@newLevel], OFFSET sbuff, SBUFF_SIZE
+
+  CALL generateLevel  ; Generates the level from sbuff -> filebuff
+  RET
+ENDP updateLevel
+
 ;;;;;;;;;;;;;;;;;;;;; AUXILIARY PROCS ;;;;;;;;;;;;;;;;;;;;;;;
 
 PROC drawLine ; Auxiliary proc for draw procedure
@@ -192,17 +191,72 @@ PROC drawLine ; Auxiliary proc for draw procedure
   RET
 ENDP drawLine
 
+PROC drawBlock
+  ARG @@type:DWORD, @@location:DWORD
+  USES ECX
+
+  CMP [@@type], 01H
+  JE @@wall
+  CMP [@@type], 02H
+  JE @@untargetable
+  RET
+
+  @@wall:
+	  CALL loadFile, OFFSET wall, OFFSET spritebuff, SPRITE_BUFF_SIZE
+    JMP @@place_block
+
+  @@untargetable:
+	  CALL loadFile, OFFSET untargetable, OFFSET spritebuff, SPRITE_BUFF_SIZE
+    JMP @@place_block
+
+  @@place_block:
+    ;; Calculate loctation into EAX
+    MOV EAX, SBUFF_SIZE 
+    SUB EAX, [@@location]
+    MOV EDI, [OFFSET filebuff + EAX + 2] ;Load destination location
+    MOV ECX, BLOCK_LEN
+    @@next_line:
+      PUSH ECX
+      MOV ECX, BLOCK_LEN
+      
+      POP ECX
+      LOOP @@next_line
+    RET
+
+ENDP drawBlock
+
+; generate a level in filebuff with the sbuff (later moved to LEVEL.BIN)
+PROC generateLevel
+  USES ESI, ECX
+
+  ; LVL that needs to be drawn
+  MOV ESI, OFFSET sbuff
+
+  MOV ECX, SBUFF_SIZE
+
+  @@loop:                       ;Loop through each block of the level
+    LODSB                       ;Load byte from sbuff
+    CALL drawBlock, EAX, ECX    ;Place block in the buffer filebuff
+    LOOP @@loop
+
+  RET
+ENDP generateLevel
 ;-----------------------------------------------------------
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
   palette DB 40, 43, 36   ; white -> green
 				  DB 13, 13, 13 	; black - dark gray
+	wall DB "VIEW/IMG/WALL.BIN", 0
+	untargetable DB "VIEW/IMG/UWALL.BIN", 0
+
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
 UDATASEG
   dbuff DD DBUFF_SIZE DUP(?)
+  spritebuff DD SPRITE_BUFF_SIZE DUP(?)
+  sbuff DD SBUFF_SIZE DUP(?)
   filebuff DD FBUFF_SIZE DUP(?)
 
 ; ----------------------------------------------------------
