@@ -3,9 +3,9 @@
 import sys, getopt
 from PIL import Image
 
-palette = {(63, 63, 63): 0,  #white
+palette = {(63, 63, 63): 0,  #nothing
         (0, 0, 0): 1,        #black
-        (40, 40, 40): 2,     #shootable wall
+        (40, 40, 40): 2,     #untargetable [LEVEL]
         (0, 0, 63): 3}       #portal
 
 def main(argv):
