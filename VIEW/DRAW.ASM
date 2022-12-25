@@ -196,11 +196,8 @@ ENDP drawLine
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-  palette DB 40, 43, 36   ; background color - green
-				  DB 13, 13, 13 	; wall+character - dark gray
-				  DB 50, 50, 50		; shootable wall - light gray
-				  DB 0, 16, 63		; blue
-				  DB 63, 20, 2		; orange
+  palette DB 40, 43, 36   ; white -> green
+				  DB 13, 13, 13 	; black - dark gray
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
