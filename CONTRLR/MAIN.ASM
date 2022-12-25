@@ -92,38 +92,38 @@ PROC collisionHandler ; checkt lvl en lijst met portals
 	USES EAX, EBX, EDI  ; return value in ECX
 
 	;MOV EDI, 5		; size block
-	;CALL loadFile, OFFSET return
+	;CALL loadFile, OFFSET level
 
 	;MOV EAX, [@@y0]
 	;DIV EDI
 	;SHL EAX, 4		; times 16 = levelmatrix width
 	;MOV EBX, EAX
 
-	;MOV EAX, [@@x0]
+	MOV EAX, [@@x0]
 	;DIV EDI
-	;CMP EAX, 0		; left out of bounds
-	;JNG @@return0 
-	;CMP EAX, 15 	; right out of bounds
-	;JG @@return3
+	CMP EAX, 0		; left out of bounds
+	JNG @@return0 
+	;CMP EAX, 80 	; right out of bounds
+	;JG @@return0
 	
 	;ADD EAX, EBX	; coord offset in EAX
 
 	;MOV EAX, [OFFSET current + EAX]
 	;CMP EAX, 0000
 	;JE @@return1
-	JMP @@return1
 
 	; CMP EAX,	; test for portal 
 	; JE @@return2
-
-	@@return0:		; don't move, wall collision
-		MOV ECX, 0
-		RET
 
 	@@return1:		; move, no collision
 		MOV ECX, 1
 		RET
 
+	@@return0:		; don't move, wall collision
+		MOV ECX, 0
+		RET
+
+	; Special cases:
 	@@return2:		; trigger, portal
 		MOV ECX, 2
 		RET
@@ -205,7 +205,7 @@ ENDP main
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-  player    Player  <20, FLOOR>
+  player    Player  <20, FLOOR, 0, 0>
   
   level DB "VIEW/IMG/LVL1.BIN", 0	
   current DB "VIEW/IMG/LEVEL.BIN", 0	
