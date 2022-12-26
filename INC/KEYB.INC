@@ -1,6 +1,10 @@
 ;-------------------------------------------------------------------
 ; 32-bit Keyboard functionality.
 ;-------------------------------------------------------------------
+UP_KEY EQU 48H
+RIGHT_KEY EQU 4DH
+LEFT_KEY EQU 4BH
+N_KEY EQU 31H
 
 GLOBAL __keyb_installKeyboardHandler:PROC
 GLOBAL __keyb_uninstallKeyboardHandler:PROC

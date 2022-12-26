@@ -22,7 +22,7 @@ CODESEG
 ;;;;;;;;;;;;;;;;;;;;; GENERAL IO ;;;;;;;;;;;;;;;;;;;;;;;;::::
 
 PROC releaseHandler
-	CMP	AL, 31H
+	CMP	AL, N_KEY
   JE @@N_key
   RET
 
@@ -33,16 +33,16 @@ PROC releaseHandler
 ENDP releaseHandler
 
 PROC pressHandler
-	CMP	AL, 4BH
+	CMP	AL, LEFT_KEY
   JE @@left
 
-	CMP	AL, 4DH
+	CMP	AL, RIGHT_KEY
   JE @@right
   
-	CMP	AL, 48H
+	CMP	AL, UP_KEY
   JE @@up
 
-	CMP	AL, 31H
+	CMP	AL, N_KEY
   JE @@N_key
 
   RET
@@ -211,10 +211,10 @@ DATASEG
 
   ; keys to be tracked
   keytracker  DW 4        ; amount of keys to track
-              DB 75, 4BH  ; left key
-              DB 77, 4DH  ; right key
-              DB 72, 48H  ; up key
-              DB 49, 31H  ; N key -> load next Level
+              DB 75, LEFT_KEY  ; left key
+              DB 77, RIGHT_KEY  ; right key
+              DB 72, UP_KEY  ; up key
+              DB 49, N_KEY  ; N key -> load next Level
 
   N_released DB TRUE
 
