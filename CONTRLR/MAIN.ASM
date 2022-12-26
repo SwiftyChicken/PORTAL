@@ -125,6 +125,7 @@ PROC main
   CALL updateColourPalette, 6
   CALL fillBackground, 00H
   CALL loadLevel, OFFSET level
+  CALL updateLevel, OFFSET level
   CALL draw, OFFSET current, 0, 0
 
   @@gameLoop:
