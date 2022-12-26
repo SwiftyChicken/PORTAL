@@ -39,7 +39,13 @@ GLOBAL updateVideoBuffer:PROC
 GLOBAL waitVBI:PROC
 GLOBAL fillBackground:PROC
 GLOBAL draw:PROC
+GLOBAL drawLevel:PROC
 GLOBAL updateLevel:PROC
+GLOBAL resetAnimated:PROC
 GLOBAL getNextFrame:PROC
 GLOBAL updateFrame:PROC
 GLOBAL updateColourPalette:PROC
+
+GLOBAL levels:Animated
+GLOBAL character_R:Animated
+GLOBAL character_L:Animated

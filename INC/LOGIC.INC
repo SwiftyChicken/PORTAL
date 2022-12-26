@@ -18,13 +18,6 @@ STRUC Player
   direction dd RIGHT
 ENDS Player
 
-STRUC Laser
-  active dd ?
-  direction dd ?
-  x dd ?
-  y dd ?
-ENDS Laser
-
 STRUC Portal
   x dd ?
   y dd ?
@@ -42,5 +35,3 @@ GLOBAL portal_B:Portal
 GLOBAL player:Player
 GLOBAL clone_A:Player
 GLOBAL clone_B:Player
-
-GLOBAL laser:Laser

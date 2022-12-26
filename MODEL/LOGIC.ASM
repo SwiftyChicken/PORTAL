@@ -142,7 +142,6 @@ ENDP collisionHandler
 PROC loadLevel
 	ARG @@fileName:DWORD
 	CALL loadFile, [@@fileName], OFFSET level, LEVEL_SIZE
-
 	RET
 ENDP
 
@@ -156,8 +155,6 @@ DATASEG
   player  Player  <0, FLOOR>
   clone_A   Player  <portal_A.x, portal_A.y>
   clone_B   Player  <portal_B.x, portal_B.y>
-
-  laser Laser <FALSE>
 
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA

@@ -35,13 +35,11 @@ PROC releaseHandler
 
   @@left:
     ; Reset Frame mid air
-    MOV [character_L.current], 0
-    MOV [character_L.image], OFFSET character_L_Images
+    CALL resetAnimated, OFFSET character_L
     RET
 
   @@right:
-    MOV [character_R.current], 0
-    MOV [character_R.image], OFFSET character_R_Images
+    CALL resetAnimated, OFFSET character_R
     RET
 
   @@N_key:
@@ -74,8 +72,8 @@ PROC pressHandler
     JNE @@end
 
     ; Update Frame
-    CALL getNextFrame, OFFSET character_L.current,[character_L.length], [character_L.current]
-    CALL updateFrame, OFFSET character_L.image, OFFSET character_L.images, [character_L.current]
+    CALL getNextFrame, OFFSET character_L
+    CALL updateFrame, OFFSET character_L
 
     RET
 
@@ -87,9 +85,9 @@ PROC pressHandler
     CMP [player.jumping], FALSE
     JNE @@end
 
-    ; Update Frame
-    CALL getNextFrame, OFFSET character_R.current,[character_R.length], [character_R.current]
-    CALL updateFrame, OFFSET character_R.image, OFFSET character_R.images, [character_R.current]
+    ;; Update Frame
+    CALL getNextFrame, OFFSET character_R
+    CALL updateFrame, OFFSET character_R
 
     RET
 
@@ -99,11 +97,9 @@ PROC pressHandler
       MOV [player.jumping], TRUE
 
       ; Reset Frame mid air
-      MOV [character_L.current], 0
-      MOV [character_L.image], OFFSET character_L_Images
-      MOV [character_R.current], 0
-      MOV [character_R.image], OFFSET character_R_Images
-
+      CALL resetAnimated, OFFSET character_L
+      CALL resetAnimated, OFFSET character_R
+      
       CMP [player.vy], 0
       JNE @@end
         MOV [player.vy], -5
@@ -116,8 +112,9 @@ PROC pressHandler
       MOV [player.x], 0
       MOV [player.y], FLOOR
       ; Load next LEVEL
-      CALL getNextFrame, OFFSET levels.current, [levels.length], [levels.current]
-      CALL updateFrame, OFFSET levels.image, OFFSET levels.images, [levels.current]
+      CALL getNextFrame, OFFSET levels
+
+      CALL updateFrame, OFFSET levels
       ; Set next LEVEL
       CALL loadLevel, [levels.image]
       CALL updateLevel, [levels.image]
@@ -158,12 +155,6 @@ PROC keyboardHandler
   RET
 ENDP keyboardHandler
 
-PROC checkEscape
-  USES EAX
-
-	RET
-ENDP checkEscape
-
 PROC exit
 	USES EAX
 	CALL setVideoMode, 03H
@@ -183,23 +174,21 @@ PROC main
 	CALL __keyb_installKeyboardHandler
   CALL setVideoMode, 13H
   CALL updateColourPalette, 4
-  CALL fillBackground, 00H
   CALL loadLevel, [levels.image]
   CALL updateLevel, [levels.image]
-  CALL draw, OFFSET current, 0, 0
+  CALL drawLevel
 
   @@gameLoop:
     CALL keyboardHandler
     CALL physicsHandler
-    CALL fillBackground, 00H
-    CALL draw, OFFSET current, 0, 0
+    CALL drawLevel
     CMP [player.direction], RIGHT
     JE @@right
       CALL draw, [character_L.image], [player.x], [player.y]
       JMP @@next
 
-    @@right:
-      CALL draw, [character_R.image], [player.x], [player.y]
+      @@right:
+        CALL draw, [character_R.image], [player.x], [player.y]
 
     @@next:
       CALL waitVBI
@@ -216,17 +205,6 @@ ENDP main
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-  ;; IMAGES FILES
-
-  levels Animated <5, 0, OFFSET levels_list, OFFSET levels_list>
-  levels_list DB "VIEW/IMG/LVL1.BIN", 0	
-              DB "VIEW/IMG/LVL2.BIN", 0	
-              DB "VIEW/IMG/LVL3.BIN", 0	
-              DB "VIEW/IMG/LVL4.BIN", 0	
-              DB "VIEW/IMG/LVL5.BIN", 0	
-
-  current DB "VIEW/IMG/LEVEL.BIN", 0	
-
   ; keys to be tracked
   keytracker  DW 4        ; amount of keys to track
               DB 75, LEFT_KEY  ; left key
@@ -236,21 +214,13 @@ DATASEG
 
   N_released DB TRUE
 
-  character_R Animated <6, 0, OFFSET character_R_Images, OFFSET character_R_Images>
-  character_R_Images DB "VIEW/IMG/P_R_0.BIN", 0
-                     DB "VIEW/IMG/P_R_1.BIN", 0
-                     DB "VIEW/IMG/P_R_1.BIN", 0
-                     DB "VIEW/IMG/P_R_0.BIN", 0
-                     DB "VIEW/IMG/P_R_2.BIN", 0
-                     DB "VIEW/IMG/P_R_2.BIN", 0
+  levels Animated <5, 0, OFFSET levels_list, OFFSET levels_list>
+  levels_list DB "VIEW/IMG/LVL1.BIN", 0	
+              DB "VIEW/IMG/LVL2.BIN", 0	
+              DB "VIEW/IMG/LVL3.BIN", 0	
+              DB "VIEW/IMG/LVL4.BIN", 0	
+              DB "VIEW/IMG/LVL5.BIN", 0	
 
-  character_L Animated <6, 0, OFFSET character_L_Images, OFFSET character_L_Images>
-  character_L_Images DB "VIEW/IMG/P_L_0.BIN", 0
-                     DB "VIEW/IMG/P_L_1.BIN", 0
-                     DB "VIEW/IMG/P_L_1.BIN", 0
-                     DB "VIEW/IMG/P_L_0.BIN", 0
-                     DB "VIEW/IMG/P_L_2.BIN", 0
-                     DB "VIEW/IMG/P_L_2.BIN", 0
 ;-----------------------------------------------------------
 ; UNSIGNED DATA
 ;-----------------------------------------------------------

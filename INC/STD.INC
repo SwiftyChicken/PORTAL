@@ -21,3 +21,4 @@ DOWN_LEFT EQU 7
 ; EXPORT
 ;-----------------------------------------------------------
 
+GLOBAL directionNext:PROC
