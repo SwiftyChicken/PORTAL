@@ -5,17 +5,19 @@
 ;-----------------------------------------------------------
 ; MACROS
 ;-----------------------------------------------------------
+SCALE EQU 4  ; image scale
+BLOCK_LEN EQU 5
 FBADR EQU 0A0000h	; video memory address
 SCRW EQU 320	; screen witdth
-FBW EQU 80	; screen witdth
+FBW EQU SCRW/SCALE	; max image witdth
+SBW EQU FBW/BLOCK_LEN	; LVL#.BIN witdth
 SCRH EQU 200	; screen height
-FBH EQU 50	; screen height
-SCALE EQU 4  ; image scale
+FBH EQU SCRH/SCALE	; max image height
+SBH EQU FBH/BLOCK_LEN	; LVL#.BIN height
 FLOOR EQU 42
-BLOCK_LEN EQU 5
 DBUFF_SIZE EQU SCRW*SCRH                 ; Doublebuffer (= Size screen)
-FBUFF_SIZE EQU (FBH*FBW)+2*2             ; Size maximum image file + 2 DW (= size image)
-SBUFF_SIZE EQU (FBH*FBW)/5               ; Size of LVL#.BIN
+FBUFF_SIZE EQU (FBW*FBH)+2*2             ; Size maximum image file + 2 DW (= size image)
+SBUFF_SIZE EQU SBW*SBH               ; Size of LVL#.BIN
 SPRITE_BUFF_SIZE EQU BLOCK_LEN*BLOCK_LEN ; Size of a LEVEL.BIN block
 
 ;-----------------------------------------------------------
@@ -35,5 +37,6 @@ GLOBAL waitVBI:PROC
 GLOBAL fillBackground:PROC
 GLOBAL draw:PROC
 GLOBAL updateColourPalette:PROC
+GLOBAL updateLevel:PROC
 
 GLOBAL dbuff:DWORD:DBUFF_SIZE

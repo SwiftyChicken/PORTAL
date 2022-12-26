@@ -51,15 +51,15 @@ ENDP loadFile
 ; generate bin file from given buffer
 PROC generateFile
 	ARG @@fileName:DWORD, @@fileBuffer:DWORD, @@size:DWORD
-	USES EAX, EBX, EDX 
+	USES EAX, ECX, EBX, EDX 
 
-	; Open LEVEL.BIN file
-	MOV AL, 0 ; read only
+	; Create LEVEL.BIN file
+	MOV CX, 0 ; read only
 	LEA EDX, [current_level]
-	MOV AH, 3DH
+	MOV AH, 3CH
 	INT 21H
 
-	MOV  EDX, OFFSET openErrorMsg
+	MOV  EDX, OFFSET createErrorMsg
 	JC @@printError ; carry flag is set if error occurs
 
 	; Write data to bin file
@@ -108,6 +108,7 @@ DATASEG
   current_level DB "VIEW/IMG/LEVEL.BIN", 0	
 
   openErrorMsg db "could not open file", 13, 10, '$'
+  createErrorMsg db "could not create file", 13, 10, '$'
   readErrorMsg db "could not read data", 13, 10, '$'
   writeErrorMsg db "could not write data", 13, 10, '$'
   closeErrorMsg db "error during file closing", 13, 10, '$'

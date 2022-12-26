@@ -77,7 +77,7 @@ PROC updateColourPalette
 	SAL EAX, 1
 	ADD ECX, EAX
 
-	MOV DX, 03C8h 	; DAC write port
+	MOV DX, 03C8h ; DAC write port
 	XOR AL, AL		; index of first color to change (0)
 	OUT DX, AL		; write to IO
 
@@ -160,9 +160,10 @@ PROC updateLevel
   ARG @@newLevel:DWORD
   USES ESI, EDI, ECX, EAX, EBX, EDX
 
-	CALL loadFile, [@@newLevel], OFFSET sbuff, SBUFF_SIZE
+	CALL loadFile, [@@newLevel], OFFSET sbuff, SBUFF_SIZE             ; Load LVL#.BIN in sbuff
+  CALL generateLevel                                                ; Generates the level from sbuff -> filebuff
+  CALL generateFile, OFFSET current, OFFSET filebuff, FBUFF_SIZE    ; Generate LEVEL.BIN from filebuff
 
-  CALL generateLevel  ; Generates the level from sbuff -> filebuff
   RET
 ENDP updateLevel
 
@@ -193,14 +194,22 @@ ENDP drawLine
 
 PROC drawBlock
   ARG @@type:DWORD, @@location:DWORD
-  USES ECX
+  USES EAX, EBX, EDX, ECX, EDI, ESI
 
+  CMP [@@type], 00H
+  JE @@empty
   CMP [@@type], 01H
   JE @@wall
   CMP [@@type], 02H
   JE @@untargetable
   RET
 
+  ;; LOAD the correct block sprite in spritebuff
+  @@empty:
+	  CALL loadFile, OFFSET empty, OFFSET spritebuff, SPRITE_BUFF_SIZE
+    JMP @@place_block
+
+  ;; LOAD the correct block sprite in spritebuff
   @@wall:
 	  CALL loadFile, OFFSET wall, OFFSET spritebuff, SPRITE_BUFF_SIZE
     JMP @@place_block
@@ -209,16 +218,44 @@ PROC drawBlock
 	  CALL loadFile, OFFSET untargetable, OFFSET spritebuff, SPRITE_BUFF_SIZE
     JMP @@place_block
 
+  ;; PLACE the spritebuff in the correct place in filebuff
   @@place_block:
+
     ;; Calculate loctation into EAX
     MOV EAX, SBUFF_SIZE 
-    SUB EAX, [@@location]
-    MOV EDI, [OFFSET filebuff + EAX + 2] ;Load destination location
-    MOV ECX, BLOCK_LEN
+    SUB EAX, [@@location]       ; value will go from [0 -> 159]
+    LEA EDX, [0]
+    MOV EBX, SBW
+    DIV EBX                     ; x -> EDX and y -> EAX
+
+    MOV EBX, BLOCK_LEN
+
+    PUSH EDX                    ; y*[block_width]
+    MUL EBX                     ; value will be in [0 -> 45] so no need to look in EDX
+
+    POP EDX                     ; x*[block_width]
+    PUSH EAX
+    MOV EAX, EDX                
+    MUL EBX                     ; value will be in [0 -> 75] so no need to look in EDX
+
+    MOV EDX, EAX                ; restor x
+    POP EAX                     ; restor y
+
+    PUSH EDX                    ; filebuff location = y*FBW + x            
+    MOV EBX, FBW
+    MUL EBX         
+    POP EDX
+    ADD EAX, EDX
+
+    LEA EDI, [OFFSET filebuff + EAX + 2*2] ;Load destination location
+    MOV ECX, BLOCK_LEN          ; Outer loop = height
+    MOV ESI, OFFSET spritebuff  ; Load sprite to draw
+    CLD
     @@next_line:
       PUSH ECX
-      MOV ECX, BLOCK_LEN
-      
+      MOV ECX, BLOCK_LEN       ; Inner loop = width
+      REP MOVSB                ; Place line sbuff -> filebuff
+      ADD EDI, FBW - BLOCK_LEN ; Load next line
       POP ECX
       LOOP @@next_line
     RET
@@ -227,18 +264,26 @@ ENDP drawBlock
 
 ; generate a level in filebuff with the sbuff (later moved to LEVEL.BIN)
 PROC generateLevel
-  USES ESI, ECX
+  USES ESI, EAX, ECX
+
+  ; Add size of level first in filebuff
+  MOV AX, FBH
+  MOV [OFFSET filebuff], AX
+  MOV AX, FBW
+  MOV [OFFSET filebuff + 2], AX
+
+  LEA EAX, [0]
 
   ; LVL that needs to be drawn
   MOV ESI, OFFSET sbuff
 
   MOV ECX, SBUFF_SIZE
 
+  MOV EDI, OFFSET filebuff
   @@loop:                       ;Loop through each block of the level
     LODSB                       ;Load byte from sbuff
     CALL drawBlock, EAX, ECX    ;Place block in the buffer filebuff
     LOOP @@loop
-
   RET
 ENDP generateLevel
 ;-----------------------------------------------------------
@@ -247,6 +292,9 @@ ENDP generateLevel
 DATASEG
   palette DB 40, 43, 36   ; white -> green
 				  DB 13, 13, 13 	; black - dark gray
+
+  current DB "VIEW/IMG/LEVEL.BIN", 0	
+	empty DB "VIEW/IMG/EMPTY.BIN", 0
 	wall DB "VIEW/IMG/WALL.BIN", 0
 	untargetable DB "VIEW/IMG/UWALL.BIN", 0
 
@@ -255,9 +303,9 @@ DATASEG
 ;-----------------------------------------------------------
 UDATASEG
   dbuff DD DBUFF_SIZE DUP(?)
-  spritebuff DD SPRITE_BUFF_SIZE DUP(?)
-  sbuff DD SBUFF_SIZE DUP(?)
-  filebuff DD FBUFF_SIZE DUP(?)
+  sbuff DB SBUFF_SIZE DUP(?)
+  filebuff DB FBUFF_SIZE DUP(?)
+  spritebuff DB SPRITE_BUFF_SIZE DUP(?)
 
 ; ----------------------------------------------------------
 ; STACK
