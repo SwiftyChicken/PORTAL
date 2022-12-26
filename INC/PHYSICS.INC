@@ -9,9 +9,13 @@ START_BOUNDRY EQU 0
 WIDTH_BOUNDRY EQU 79
 HEIGHT_BOUNDRY EQU 49
 UP EQU 0
-RIGHT EQU 1
-DOWN EQU 2
-LEFT EQU 3
+UP_RIGHT EQU 1
+RIGHT EQU 2
+DOWN_RIGHT EQU 3
+DOWN EQU 4
+DOWN_LEFT EQU 5
+LEFT EQU 6
+DOWN_LEFT EQU 7
 
 STRUC Player
   x dd ?
@@ -22,7 +26,13 @@ STRUC Player
   direction dd RIGHT
 ENDS Player
 
+STRUC Laser
+  state dd ?
+  direction dd ?
+ENDS Laser
+
 GLOBAL physicsHandler:PROC
 GLOBAL loadLevel:PROC
 
 GLOBAL player:Player
+GLOBAL laser:Laser

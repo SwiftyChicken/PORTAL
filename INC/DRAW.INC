@@ -8,12 +8,15 @@
 SCALE EQU 4  ; image scale
 BLOCK_LEN EQU 5
 FBADR EQU 0A0000h	; video memory address
+
 SCRW EQU 320	; screen witdth
 FBW EQU SCRW/SCALE	; max image witdth
 SBW EQU FBW/BLOCK_LEN	; LVL#.BIN witdth
+
 SCRH EQU 200	; screen height
 FBH EQU SCRH/SCALE	; max image height
 SBH EQU FBH/BLOCK_LEN	; LVL#.BIN height
+
 FLOOR EQU 42
 DBUFF_SIZE EQU SCRW*SCRH                 ; Doublebuffer (= Size screen)
 FBUFF_SIZE EQU (FBW*FBH)+2*2             ; Size maximum image file + 2 DW (= size image)
