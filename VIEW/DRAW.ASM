@@ -240,10 +240,18 @@ PROC drawBlock
 
   CMP [@@type], 00H
   JE @@empty
+
   CMP [@@type], 01H
   JE @@wall
+
   CMP [@@type], 02H
   JE @@untargetable
+
+  CMP [@@type], 03H
+  JE @@portalA
+
+  CMP [@@type], 04H
+  JE @@portalB
   RET
 
   ;; LOAD the correct block sprite in spritebuff
@@ -258,6 +266,14 @@ PROC drawBlock
 
   @@untargetable:
 	  CALL loadFile, OFFSET untargetable, OFFSET spritebuff, SPRITE_BUFF_SIZE
+    JMP @@place_block
+
+  @@portalA:
+	  CALL loadFile, OFFSET portal_A, OFFSET spritebuff, SPRITE_BUFF_SIZE
+    JMP @@place_block
+
+  @@portalB:
+	  CALL loadFile, OFFSET portal_B, OFFSET spritebuff, SPRITE_BUFF_SIZE
     JMP @@place_block
 
   ;; PLACE the spritebuff in the correct place in filebuff
@@ -333,11 +349,15 @@ ENDP generateLevel
 DATASEG
   palette DB 40, 43, 36   ; white -> green
 				  DB 13, 13, 13 	; black -> dark gray
+				  DB 8, 25, 33 	; temp portal A -> blue
+				  DB 33, 25, 8 	; temp portal B -> orange
 
   current DB "VIEW/IMG/LEVEL.BIN", 0	
 	empty DB "VIEW/IMG/EMPTY.BIN", 0
 	wall DB "VIEW/IMG/WALL.BIN", 0
 	untargetable DB "VIEW/IMG/UWALL.BIN", 0
+	portal_A DB "VIEW/IMG/PRT_A.BIN", 0
+	portal_B DB "VIEW/IMG/PRT_B.BIN", 0
 
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
