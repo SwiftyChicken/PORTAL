@@ -167,6 +167,45 @@ PROC updateLevel
   RET
 ENDP updateLevel
 
+;;;;;;;;;;;;;;;;;;;;; ANIMATION PROCS ;;;;;;;;;;;;;;;;;;;;;;;
+
+PROC getNextFrame
+  ARG @@save_to:DWORD, @@length:DWORD, @@current:DWORD
+  USES EAX, EBX, EDX                       ; return value in EDX
+
+  MOV EAX, [@@current]
+  INC EAX
+  MOV EBX, [@@length]
+  LEA EDX, [0]
+  DIV EBX
+    
+  ;; dereference address
+  MOV EAX, [@@save_to]
+  MOV [EAX], EDX
+  
+  RET
+ENDP getNextFrame
+
+PROC updateFrame    ; function expect image pointer to be ESI
+  ARG @@save_to:DWORD, @@images:DWORD, @@index:DWORD
+  USES EAX, EBX, EDX
+
+  MOV EAX, [@@images]  ; address of animated.images
+  MOV EAX, [EAX]       ; address of images list
+  PUSH EAX             ; save address on stack
+
+  MOV EBX, 19
+  MOV EAX, [@@index]
+  MUL EBX
+
+  POP EBX
+  ADD EBX, EAX
+  
+  ;; dereference address
+  MOV EAX, [@@save_to]
+  MOV [EAX], EBX
+  RET
+ENDP updateFrame
 ;;;;;;;;;;;;;;;;;;;;; AUXILIARY PROCS ;;;;;;;;;;;;;;;;;;;;;;;
 
 PROC drawLine ; Auxiliary proc for draw procedure
