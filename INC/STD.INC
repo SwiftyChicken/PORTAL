@@ -15,7 +15,7 @@ DOWN_RIGHT EQU 3
 DOWN EQU 4
 DOWN_LEFT EQU 5
 LEFT EQU 6
-DOWN_LEFT EQU 7
+UP_LEFT EQU 7
 
 ;-----------------------------------------------------------
 ; EXPORT

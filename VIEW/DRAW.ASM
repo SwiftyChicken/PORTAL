@@ -44,7 +44,7 @@ PROC waitVBI
   USES EDX, ECX
 
   MOV DX, 03DAH ;VGA status port
-  MOV ECX, 2
+  MOV ECX, 3
 
   @@waitForEnd:
     IN AL, DX
