@@ -113,9 +113,9 @@ PROC keyboardHandler
     LODSB
     MOVZX EAX, AL
     MOV BL, [offset __keyb_keyboardState + EAX]
-    CMP BL, 1
+    CMP BL, TRUE
     JE @@pressed
-      CMP BL, 0
+      CMP BL, FALSE
     JE @@release
     JMP @@next
       @@pressed:
