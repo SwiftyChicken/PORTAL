@@ -188,23 +188,26 @@ ENDP getNextFrame
 
 PROC updateFrame    ; function expect image pointer to be ESI
   ARG @@save_to:DWORD, @@images:DWORD, @@index:DWORD
-  USES EAX, EBX, EDX
+  USES EAX, EBX, ECX, EDX, ESI
 
   MOV EAX, [@@images]  ; address of animated.images
   MOV EAX, [EAX]       ; address of images list
-  PUSH EAX             ; save address on stack
+  MOV ESI, EAX         ; ESI hold start of list
 
-  MOV EBX, 19
-  MOV EAX, [@@index]
-  MUL EBX
-
-  POP EBX
-  ADD EBX, EAX
+  MOV ECX, [@@index]   ; Find the Frame path on given index
+  JECXZ @@save         ; Skip if index = 0
+  @@loop:
+    @@next_frame:       ; Find the next path name by using the tailing 0
+      LODSB
+      CMP AL, 0
+      JNE @@next_frame
+    LOOP @@loop
   
-  ;; dereference address
-  MOV EAX, [@@save_to]
-  MOV [EAX], EBX
-  RET
+  @@save:
+    ;; dereference address
+    MOV EAX, [@@save_to]
+    MOV [EAX], ESI
+    RET
 ENDP updateFrame
 ;;;;;;;;;;;;;;;;;;;;; AUXILIARY PROCS ;;;;;;;;;;;;;;;;;;;;;;;
 
