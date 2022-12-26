@@ -30,8 +30,8 @@ PROC updateVideoBuffer
   USES ESI, EDI, ECX
 
   CLD
-  MOV ESI, OFFSET dbuff
-  MOV EDI, FBADR
+  MOV ESI, OFFSET double_buff
+  MOV EDI, FRAME_BUFF_ADR
   
   MOV ECX, SCRW * SCRH ; Amount of pixels on screen
   REP MOVSB
@@ -91,7 +91,7 @@ PROC fillBackground
   ARG @@color:BYTE
   USES EAX, ECX, EDI
 
-  MOV EDI, OFFSET dbuff ; Frame buffer start address
+  MOV EDI, OFFSET double_buff ; Frame buffer start address
   
   MOV AL, [@@color]
   MOV AH, AL
@@ -110,11 +110,11 @@ PROC draw
   ARG @@image:DWORD, @@column:DWORD, @@row:DWORD
   USES ESI, EDI, ECX, EAX, EBX, EDX
 
-	CALL loadFile, [@@image], OFFSET filebuff, FBUFF_SIZE
+	CALL loadFile, [@@image], OFFSET image_buff, IMAGE_BUFF_SIZE
 
   ; Set up Index registers
-  MOV ESI, OFFSET filebuff
-  MOV EDI, OFFSET dbuff
+  MOV ESI, OFFSET image_buff
+  MOV EDI, OFFSET double_buff
 
   ; Calculate the drawing start position => EDI
   MOV EBX, [@@row]
@@ -159,9 +159,9 @@ PROC updateLevel
   ARG @@newLevel:DWORD
   USES ESI, EDI, ECX, EAX, EBX, EDX
 
-	CALL loadFile, [@@newLevel], OFFSET sbuff, SBUFF_SIZE             ; Load LVL#.BIN in sbuff
-  CALL generateLevel                                                ; Generates the level from sbuff -> filebuff
-  CALL generateFile, OFFSET current, OFFSET filebuff, FBUFF_SIZE    ; Generate LEVEL.BIN from filebuff
+	CALL loadFile, [@@newLevel], OFFSET lvl_buff, LVL_BUFF_SIZE             ; Load LVL#.BIN in lvl_buff
+  CALL generateLevel                                                ; Generates the level from lvl_buff -> image_buff
+  CALL generateFile, OFFSET current, OFFSET image_buff, IMAGE_BUFF_SIZE    ; Generate LEVEL.BIN from image_buff
 
   RET
 ENDP updateLevel
@@ -254,36 +254,36 @@ PROC drawBlock
   JE @@portalB
   RET
 
-  ;; LOAD the correct block sprite in spritebuff
+  ;; LOAD the correct block sprite in block_buff
   @@empty:
-	  CALL loadFile, OFFSET empty, OFFSET spritebuff, SPRITE_BUFF_SIZE
+	  CALL loadFile, OFFSET empty, OFFSET block_buff, BLOCK_BUFF_SIZE
     JMP @@place_block
 
-  ;; LOAD the correct block sprite in spritebuff
+  ;; LOAD the correct block sprite in block_buff
   @@wall:
-	  CALL loadFile, OFFSET wall, OFFSET spritebuff, SPRITE_BUFF_SIZE
+	  CALL loadFile, OFFSET wall, OFFSET block_buff, BLOCK_BUFF_SIZE
     JMP @@place_block
 
   @@untargetable:
-	  CALL loadFile, OFFSET untargetable, OFFSET spritebuff, SPRITE_BUFF_SIZE
+	  CALL loadFile, OFFSET untargetable, OFFSET block_buff, BLOCK_BUFF_SIZE
     JMP @@place_block
 
   @@portalA:
-	  CALL loadFile, OFFSET portal_A, OFFSET spritebuff, SPRITE_BUFF_SIZE
+	  CALL loadFile, OFFSET portal_A, OFFSET block_buff, BLOCK_BUFF_SIZE
     JMP @@place_block
 
   @@portalB:
-	  CALL loadFile, OFFSET portal_B, OFFSET spritebuff, SPRITE_BUFF_SIZE
+	  CALL loadFile, OFFSET portal_B, OFFSET block_buff, BLOCK_BUFF_SIZE
     JMP @@place_block
 
-  ;; PLACE the spritebuff in the correct place in filebuff
+  ;; PLACE the block_buff in the correct place in image_buff
   @@place_block:
 
     ;; Calculate loctation into EAX
-    MOV EAX, SBUFF_SIZE 
+    MOV EAX, LVL_BUFF_SIZE 
     SUB EAX, [@@location]       ; value will go from [0 -> 159]
 		XOR EDX, EDX
-    MOV EBX, SBW
+    MOV EBX, LVLBW
     DIV EBX                     ; x -> EDX and y -> EAX
 
     MOV EBX, BLOCK_LEN
@@ -299,46 +299,46 @@ PROC drawBlock
     MOV EDX, EAX                ; restor x
     POP EAX                     ; restor y
 
-    PUSH EDX                    ; filebuff location = y*FBW + x            
-    MOV EBX, FBW
+    PUSH EDX                    ; image_buff location = y*IMGBW + x            
+    MOV EBX, IMGBW
     MUL EBX         
     POP EDX
     ADD EAX, EDX
 
-    LEA EDI, [OFFSET filebuff + EAX + 2*2] ;Load destination location
+    LEA EDI, [OFFSET image_buff + EAX + 2*2] ;Load destination location
     MOV ECX, BLOCK_LEN          ; Outer loop = height
-    MOV ESI, OFFSET spritebuff  ; Load sprite to draw
+    MOV ESI, OFFSET block_buff  ; Load sprite to draw
     CLD
     @@next_line:
       PUSH ECX
       MOV ECX, BLOCK_LEN       ; Inner loop = width
-      REP MOVSB                ; Place line sbuff -> filebuff
-      ADD EDI, FBW - BLOCK_LEN ; Load next line
+      REP MOVSB                ; Place line lvl_buff -> image_buff
+      ADD EDI, IMGBW - BLOCK_LEN ; Load next line
       POP ECX
       LOOP @@next_line
     RET
 
 ENDP drawBlock
 
-; generate a level in filebuff with the sbuff (later moved to LEVEL.BIN)
+; generate a level in image_buff with the lvl_buff (later moved to LEVEL.BIN)
 PROC generateLevel
   USES ESI, EAX, ECX
 
-  ; Add size of level first in filebuff
-  MOV AX, FBH
-  MOV [OFFSET filebuff], AX
-  MOV AX, FBW
-  MOV [OFFSET filebuff + 2], AX
+  ; Add size of level first in image_buff
+  MOV AX, IMGBH
+  MOV [OFFSET image_buff], AX
+  MOV AX, IMGBW
+  MOV [OFFSET image_buff + 2], AX
 
   ; LVL that needs to be drawn
-  MOV ESI, OFFSET sbuff
+  MOV ESI, OFFSET lvl_buff
 
-  MOV ECX, SBUFF_SIZE
+  MOV ECX, LVL_BUFF_SIZE
 
-  MOV EDI, OFFSET filebuff
+  MOV EDI, OFFSET image_buff
   @@loop:                       ;Loop through each block of the level
-    LODSB                       ;Load byte from sbuff
-    CALL drawBlock, EAX, ECX    ;Place block in the buffer filebuff
+    LODSB                       ;Load byte from lvl_buff
+    CALL drawBlock, EAX, ECX    ;Place block in the buffer image_buff
     LOOP @@loop
   RET
 ENDP generateLevel
@@ -363,10 +363,10 @@ DATASEG
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
 UDATASEG
-  dbuff DD DBUFF_SIZE DUP(?)
-  sbuff DB SBUFF_SIZE DUP(?)
-  filebuff DB FBUFF_SIZE DUP(?)
-  spritebuff DB SPRITE_BUFF_SIZE DUP(?)
+  double_buff DD DBUFF_SIZE DUP(?)
+  lvl_buff DB LVL_BUFF_SIZE DUP(?)
+  image_buff DB IMAGE_BUFF_SIZE DUP(?)
+  block_buff DB BLOCK_BUFF_SIZE DUP(?)
 
 ; ----------------------------------------------------------
 ; STACK

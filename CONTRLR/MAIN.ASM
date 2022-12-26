@@ -201,8 +201,7 @@ DATASEG
   ;; IMAGES FILES
 
   levels Animated <5, 0, OFFSET levels_list, OFFSET levels_list>
-  levels_list DB "VIEW/IMG/LVL0.BIN", 0	
-              DB "VIEW/IMG/LVL1.BIN", 0	
+  levels_list DB "VIEW/IMG/LVL1.BIN", 0	
               DB "VIEW/IMG/LVL2.BIN", 0	
               DB "VIEW/IMG/LVL3.BIN", 0	
               DB "VIEW/IMG/LVL4.BIN", 0	
