@@ -30,7 +30,14 @@ CODESEG
 ;;;;;;;;;;;;;;;;;;;;; GENERAL IO ;;;;;;;;;;;;;;;;;;;;;;;;::::
 
 PROC releaseHandler
+	CMP	AL, 31H
+  JE @@N_key
   RET
+
+  @@N_key:
+    MOV [N_released], TRUE
+    RET
+
 ENDP releaseHandler
 
 PROC pressHandler
@@ -43,7 +50,10 @@ PROC pressHandler
 	CMP	AL, 48H
   JE @@up
 
-  JMP @@end
+	CMP	AL, 31H
+  JE @@N_key
+
+  RET
 
   @@left:
     MOV [player.direction], LEFT
@@ -53,7 +63,7 @@ PROC pressHandler
     CALL getNextFrame, OFFSET character_L.current,[character_L.length], [character_L.current]
     CALL updateFrame, OFFSET character_L.image, OFFSET character_L.images, [character_L.current]
 
-    JMP @@end
+    RET
 
   @@right:
     MOV [player.direction], RIGHT
@@ -63,15 +73,30 @@ PROC pressHandler
     CALL getNextFrame, OFFSET character_R.current,[character_R.length], [character_R.current]
     CALL updateFrame, OFFSET character_R.image, OFFSET character_R.images, [character_R.current]
 
-    JMP @@end
+    RET
 
   @@up:
     CMP [player.jumping], FALSE
     JNE @@end
-    MOV [player.jumping], TRUE
-    CMP [player.vy], 0
-    JNE @@end
-    MOV [player.vy], -5
+      MOV [player.jumping], TRUE
+      CMP [player.vy], 0
+      JNE @@end
+        MOV [player.vy], -5
+        RET
+
+  @@N_key:
+    CMP [N_released], FALSE
+    JE @@end
+      MOV [N_released], FALSE
+      MOV [player.x], 0
+      MOV [player.y], FLOOR
+      ; Load next LEVEL
+      CALL getNextFrame, OFFSET levels.current, [levels.length], [levels.current]
+      CALL updateFrame, OFFSET levels.image, OFFSET levels.images, [levels.current]
+      ; Set next LEVEL
+      CALL loadLevel, [levels.image]
+      CALL updateLevel, [levels.image]
+    RET
 
   @@end:
     RET
@@ -90,20 +115,20 @@ PROC keyboardHandler
     MOV BL, [offset __keyb_keyboardState + EAX]
     CMP BL, 1
     JE @@pressed
-    CMP BL, 0
+      CMP BL, 0
     JE @@release
     JMP @@next
-    @@pressed:
-      LODSB
-      CALL pressHandler
-      JMP @@next
+      @@pressed:
+        LODSB
+        CALL pressHandler
+        JMP @@next
 
-    @@release:
-      LODSB
-      CALL releaseHandler
+      @@release:
+        LODSB
+        CALL releaseHandler
 
-    @@next:
-    LOOP @@loop
+      @@next:
+        LOOP @@loop
     
   RET
 ENDP keyboardHandler
@@ -178,10 +203,13 @@ DATASEG
   current DB "VIEW/IMG/LEVEL.BIN", 0	
 
   ; keys to be tracked
-  keytracker  DW 3        ; amount of keys to track
+  keytracker  DW 4        ; amount of keys to track
               DB 75, 4BH  ; left key
               DB 77, 4DH  ; right key
               DB 72, 48H  ; up key
+              DB 49, 31H  ; N key -> load next Level
+
+  N_released DB TRUE
 
   character_R Animated <4, 0, OFFSET character_R_Images, OFFSET character_R_Images>
   character_R_Images DB "VIEW/IMG/P_R_0.BIN", 0
