@@ -15,14 +15,6 @@ INCLUDE "INC/DRAW.INC"
 INCLUDE "INC/PHYSICS.INC"
 
 ;-----------------------------------------------------------
-; CONSTANTS
-;-----------------------------------------------------------
-FBADR EQU 0A0000h	; video memory address
-SCRW EQU 320	; screen witdth
-SCRH EQU 200	; screen height
-SCALE EQU 4   ; image scale
-
-;-----------------------------------------------------------
 ; CODE
 ;-----------------------------------------------------------
 CODESEG
