@@ -206,6 +206,7 @@ PROC updateFrame    ; function expect image pointer to be ESI
   MOV [EAX], EBX
   RET
 ENDP updateFrame
+
 ;;;;;;;;;;;;;;;;;;;;; AUXILIARY PROCS ;;;;;;;;;;;;;;;;;;;;;;;
 
 PROC drawLine ; Auxiliary proc for draw procedure
@@ -325,6 +326,7 @@ PROC generateLevel
     LOOP @@loop
   RET
 ENDP generateLevel
+
 ;-----------------------------------------------------------
 ; DATA
 ;-----------------------------------------------------------
