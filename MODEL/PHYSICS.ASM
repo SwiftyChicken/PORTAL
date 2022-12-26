@@ -62,12 +62,13 @@ PROC physicsHandler
 
   @@dont_move_y:
     MOV [player.vy], 0
-    MOV [player.jumping], 0
+    MOV [player.jumping], FALSE
 
   @@end:
     RET
 ENDP physicsHandler
 
+; AABB collision
 PROC checkCollision
 	ARG @@x0:DWORD, @@y0:DWORD
 	USES EAX, EBX
@@ -77,25 +78,26 @@ PROC checkCollision
 	MOV EBX, [@@y0]
 	ADD EBX, BLOCK_SIZE - 1
 
-  CALL collisionHandler, [@@x0], [@@y0]
+  CALL collisionHandler, [@@x0], [@@y0] ; check upper left for collision
   CMP DL, FALSE
   JNE @return
 
-  CALL collisionHandler, EAX, [@@y0]
+  CALL collisionHandler, EAX, [@@y0]		; check upper right for collision
   CMP DL, FALSE
   JNE @return
 
-  CALL collisionHandler, [@@x0], EBX
+  CALL collisionHandler, [@@x0], EBX		; check lower left for collision
   CMP DL, FALSE
   JNE @return
 
-  CALL collisionHandler, EAX, EBX
+  CALL collisionHandler, EAX, EBX				; check lower right for collision
 
   @return:
     RET
 ENDP checkCollision
 
-PROC collisionHandler ; checkt lvl en lijst met portals
+; Checks level and list of portals
+PROC collisionHandler 
 	ARG @@x0:DWORD, @@y0:DWORD
 	USES EAX, EBX
 
@@ -132,7 +134,7 @@ PROC collisionHandler ; checkt lvl en lijst met portals
   RET
 
   @outOfBound:
-    MOV DL, 01H
+    MOV DL, TRUE
     RET
 
 ENDP collisionHandler 
