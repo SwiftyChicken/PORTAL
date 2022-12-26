@@ -54,11 +54,13 @@ PROC createPortal
     POP EBX
     POP EBX
 
+  CMP DL, 02H
+  JE @@end
     
   CMP [nextPortal], PORTAL_A
   JE @@create_A
   JMP @@create_B
-
+  
   @@create_A:
     MOV [nextPortal], PORTAL_B
     MOV EAX, [@@x0]
@@ -81,6 +83,8 @@ PROC createPortal
     MOV [portal_B.active], TRUE
     RET
 
+  @@end:
+    RET
 ENDP createPortal
 ; Return FALSE in DL for next level or end of game
 PROC physicsHandler

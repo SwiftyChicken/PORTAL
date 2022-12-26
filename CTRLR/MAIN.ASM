@@ -31,10 +31,17 @@ PROC releaseHandler
 
 	CMP	AL, N_KEY
   JE @@N_key
+
+	CMP	AL, X_KEY
+  JE @@X_key
+
+	CMP	AL, C_KEY
+  JE @@C_key
   RET
 
   @@left:
     ; Reset Frame mid air
+    CALL resetAnimated, OFFSET character_L
     CALL resetAnimated, OFFSET character_L
     RET
 
@@ -44,6 +51,14 @@ PROC releaseHandler
 
   @@N_key:
     MOV [N_released], TRUE
+    RET
+
+  @@X_key:
+    MOV [X_released], TRUE
+    RET
+
+  @@C_key:
+    MOV [C_released], TRUE
     RET
 
 ENDP releaseHandler
@@ -60,6 +75,12 @@ PROC pressHandler
 
 	CMP	AL, N_KEY
   JE @@N_key
+
+	CMP	AL, X_KEY
+  JE @@X_key
+
+	CMP	AL, C_KEY
+  JE @@C_key
 
   RET
 
@@ -118,8 +139,24 @@ PROC pressHandler
       ; Set next LEVEL
       CALL loadLevel, [levels.image]
       CALL updateLevel, [levels.image]
+
+      MOV [portal_B.active], FALSE
+      MOV [portal_A.active], FALSE
     RET
 
+  @@X_key:
+    CMP [X_released], FALSE
+    JE @@end
+      MOV [X_released], FALSE
+      CALL createPortal, [player.x], [player.y], DOWN
+    RET
+
+  @@C_key:
+    CMP [C_released], FALSE
+    JE @@end
+      MOV [X_released], FALSE
+      CALL createPortal, [player.x], [player.y], UP
+    RET
   @@end:
     RET
 ENDP pressHandler
@@ -166,6 +203,9 @@ PROC checkLevelFinished
 
     CALL loadLevel, [levels.image]
     CALL updateLevel, [levels.image]
+
+    MOV [portal_B.active], FALSE
+    MOV [portal_A.active], FALSE
   @@end:
     RET
 ENDP checkLevelFinished
@@ -200,19 +240,28 @@ PROC main
     CMP [player.direction], RIGHT
     JE @@right
       CALL draw, [character_L.image], [player.x], [player.y]
-      JMP @@next
+      JMP @@skip_right
 
       @@right:
         CALL draw, [character_R.image], [player.x], [player.y]
 
-    @@next:
-      CALL waitVBI
-      CALL updateVideoBuffer
-      CALL checkLevelFinished
-	    MOV AL, [__keyb_rawScanCode] ; last pressed key
-	    CMP AL, 01H
-	    JNE	@@gameLoop
-        CALL exit
+    @@skip_right:
+      CMP [portal_B.active], FALSE
+      JE @@prt_a
+        CALL draw, [PRT_B.image], [portal_B.x], [portal_B.y]
+      @@prt_a:
+        CMP [portal_A.active], FALSE
+        JE @@next
+          CALL draw, [PRT_A.image], [portal_A.x], [portal_A.y]
+
+      @@next:
+        CALL waitVBI
+        CALL updateVideoBuffer
+        CALL checkLevelFinished
+	      MOV AL, [__keyb_rawScanCode] ; last pressed key
+	      CMP AL, 01H
+	      JNE	@@gameLoop
+          CALL exit
 
   RET
 ENDP main
@@ -222,13 +271,18 @@ ENDP main
 ;-----------------------------------------------------------
 DATASEG
   ; keys to be tracked
-  keytracker  DW 4        ; amount of keys to track
+  keytracker  DW 7        ; amount of keys to track
               DB 75, LEFT_KEY  ; left key
               DB 77, RIGHT_KEY  ; right key
               DB 72, UP_KEY  ; up key
               DB 49, N_KEY  ; N key -> load next Level
+              DB 46, C_KEY  ; C key -> down_right portal
+              DB 45, X_KEY  ; X key -> down portal
+              DB 44, W_KEY  ; W key -> down_left portal
 
   N_released DB TRUE
+  X_released DB TRUE
+  C_released DB TRUE
 
   levels Animated <5, 0, OFFSET levels_list, OFFSET levels_list>
   levels_list DB "VIEW/IMG/LVL1.BIN", 0	

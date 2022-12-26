@@ -49,3 +49,5 @@ GLOBAL updateColourPalette:PROC
 GLOBAL levels:Animated
 GLOBAL character_R:Animated
 GLOBAL character_L:Animated
+GLOBAL PRT_A:Animated
+GLOBAL PRT_B:Animated

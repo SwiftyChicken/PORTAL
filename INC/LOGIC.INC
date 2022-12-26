@@ -32,6 +32,7 @@ ENDS Portal
 
 GLOBAL physicsHandler:PROC
 GLOBAL loadLevel:PROC
+GLOBAL createPortal:PROC
 
 GLOBAL portal_A:Portal
 GLOBAL portal_B:Portal

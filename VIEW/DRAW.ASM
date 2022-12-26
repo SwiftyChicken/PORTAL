@@ -324,11 +324,11 @@ PROC drawBlock
     JMP @@place_block
 
   @@portalA:
-	  CALL loadFile, OFFSET portal_A, OFFSET block_buff, BLOCK_BUFF_SIZE
+	  CALL loadFile, OFFSET PRT_A, OFFSET block_buff, BLOCK_BUFF_SIZE
     JMP @@place_block
 
   @@portalB:
-	  CALL loadFile, OFFSET portal_B, OFFSET block_buff, BLOCK_BUFF_SIZE
+	  CALL loadFile, OFFSET PRT_B, OFFSET block_buff, BLOCK_BUFF_SIZE
     JMP @@place_block
 
   ;; PLACE the block_buff in the correct place in image_buff
@@ -411,8 +411,13 @@ DATASEG
 	wall DB "VIEW/IMG/WALL.BIN", 0
 	untargetable DB "VIEW/IMG/UWALL.BIN", 0
 
-	portal_A DB "VIEW/IMG/PRT_A.BIN", 0
-	portal_B DB "VIEW/IMG/PRT_B.BIN", 0
+  PRT_A Animated <2, 0, OFFSET PRT_A_Images, OFFSET PRT_A_Images>
+	PRT_A_Images DB "VIEW/IMG/PRT_A.BIN", 0
+	                DB "VIEW/IMG/WALL.BIN", 0
+
+  PRT_B Animated <2, 0, OFFSET PRT_B_Images, OFFSET PRT_B_Images>
+	PRT_B_Images DB "VIEW/IMG/PRT_B.BIN", 0
+	                DB "VIEW/IMG/WALL.BIN", 0
 
   character_R Animated <6, 0, OFFSET character_R_Images, OFFSET character_R_Images>
 
