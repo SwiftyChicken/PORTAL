@@ -6,8 +6,9 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
-INCLUDE "INC/DRAW.INC"
+INCLUDE "INC/STD.INC"
 INCLUDE "INC/FILE.INC"
+INCLUDE "INC/DRAW.INC"
 
 ;-----------------------------------------------------------
 ; CODE

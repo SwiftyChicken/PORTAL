@@ -22,9 +22,27 @@ CODESEG
 ;;;;;;;;;;;;;;;;;;;;; GENERAL IO ;;;;;;;;;;;;;;;;;;;;;;;;::::
 
 PROC releaseHandler
+
+	CMP	AL, LEFT_KEY
+  JE @@left
+
+	CMP	AL, RIGHT_KEY
+  JE @@right
+
 	CMP	AL, N_KEY
   JE @@N_key
   RET
+
+  @@left:
+    ; Reset Frame mid air
+    MOV [character_L.current], 0
+    MOV [character_L.image], OFFSET character_L_Images
+    RET
+
+  @@right:
+    MOV [character_R.current], 0
+    MOV [character_R.image], OFFSET character_R_Images
+    RET
 
   @@N_key:
     MOV [N_released], TRUE
@@ -218,16 +236,20 @@ DATASEG
 
   N_released DB TRUE
 
-  character_R Animated <4, 0, OFFSET character_R_Images, OFFSET character_R_Images>
+  character_R Animated <6, 0, OFFSET character_R_Images, OFFSET character_R_Images>
   character_R_Images DB "VIEW/IMG/P_R_0.BIN", 0
+                     DB "VIEW/IMG/P_R_1.BIN", 0
                      DB "VIEW/IMG/P_R_1.BIN", 0
                      DB "VIEW/IMG/P_R_0.BIN", 0
                      DB "VIEW/IMG/P_R_2.BIN", 0
+                     DB "VIEW/IMG/P_R_2.BIN", 0
 
-  character_L Animated <4, 0, OFFSET character_L_Images, OFFSET character_L_Images>
+  character_L Animated <6, 0, OFFSET character_L_Images, OFFSET character_L_Images>
   character_L_Images DB "VIEW/IMG/P_L_0.BIN", 0
                      DB "VIEW/IMG/P_L_1.BIN", 0
+                     DB "VIEW/IMG/P_L_1.BIN", 0
                      DB "VIEW/IMG/P_L_0.BIN", 0
+                     DB "VIEW/IMG/P_L_2.BIN", 0
                      DB "VIEW/IMG/P_L_2.BIN", 0
 ;-----------------------------------------------------------
 ; UNSIGNED DATA
