@@ -34,7 +34,7 @@ PROC updateVideoBuffer
   MOV ESI, OFFSET double_buff
   MOV EDI, FRAME_BUFF_ADR
   
-  MOV ECX, SCRW * SCRH ; Amount of pixels on screen
+  MOV ECX, DBUFF_SIZE ; Amount of pixels on screen
   REP MOVSB
 
   RET
@@ -109,13 +109,36 @@ ENDP fillBackground
 
 PROC draw
   ARG @@image:DWORD, @@column:DWORD, @@row:DWORD
-  USES ESI, EDI, ECX, EAX, EBX, EDX
+  USES ESI, EDI
 
 	CALL loadFile, [@@image], OFFSET image_buff, IMAGE_BUFF_SIZE
 
+  CLD
   ; Set up Index registers
   MOV ESI, OFFSET image_buff
   MOV EDI, OFFSET double_buff
+
+  CALL scaleBuff, [@@column], [@@row]
+
+  RET
+ENDP draw
+
+PROC drawLevel
+  USES ESI, EDI
+
+  CLD
+  MOV ESI, OFFSET level_buff
+  MOV EDI, OFFSET double_buff
+  
+  MOV ECX, DBUFF_SIZE ; Amount of pixels on screen
+  REP MOVSB
+
+  RET
+ENDP drawLevel
+
+PROC scaleBuff
+  ARG @@column:DWORD, @@row:DWORD
+  USES ECX, EAX, EBX, EDX
 
   ; Calculate the drawing start position => EDI
   MOV EBX, [@@row]
@@ -154,7 +177,17 @@ PROC draw
     LOOP @@nextLine
     
     RET
-ENDP draw
+ENDP scaleBuff
+
+PROC drawLaser ; draw laser directly into double_buff
+  ARG @@x0:DWORD, @@y0:DWORD, @@direction:DWORD
+  USES EAX, EDX
+  CALL directionNext, [@@direction]  ; set up EAX (-> x) and EDX (-> y) to calculate next position
+
+
+
+  RET
+ENDP drawLaser
 
 PROC updateLevel
   ARG @@newLevel:DWORD
@@ -162,51 +195,70 @@ PROC updateLevel
 
 	CALL loadFile, [@@newLevel], OFFSET lvl_buff, LVL_BUFF_SIZE             ; Load LVL#.BIN in lvl_buff
   CALL generateLevel                                                ; Generates the level from lvl_buff -> image_buff
-  CALL generateFile, OFFSET current, OFFSET image_buff, IMAGE_BUFF_SIZE    ; Generate LEVEL.BIN from image_buff
+
+  CLD
+  ; Set up Index registers
+  MOV ESI, OFFSET image_buff
+  MOV EDI, OFFSET level_buff
+  CALL scaleBuff, 0, 0
 
   RET
 ENDP updateLevel
 
 ;;;;;;;;;;;;;;;;;;;;; ANIMATION PROCS ;;;;;;;;;;;;;;;;;;;;;;;
 
+PROC resetAnimated
+  ARG @@animated_ptr:DWORD
+  USES EAX, EBX
+  MOV EAX, [@@animated_ptr]
+
+  MOV EBX, [@@animated_ptr]
+  MOV EBX, [EBX + Animated.images]
+  MOV [EAX + Animated.image], EBX                    ; save adrres in animated.images to animated.image
+  RET
+
+ENDP resetAnimated
+
 PROC getNextFrame
-  ARG @@save_to:DWORD, @@length:DWORD, @@current:DWORD
+  ARG @@animated_ptr:DWORD
   USES EAX, EBX, EDX                       ; return value in EDX
 
-  MOV EAX, [@@current]
+  MOV EAX, [@@animated_ptr]           ; animated.current
+  MOV EAX, [EAX + Animated.current]   ; get current
   INC EAX
-  MOV EBX, [@@length]
-	XOR EDX, EDX
+
+  MOV EBX, [@@animated_ptr]         ; get pointer
+  MOV EBX, [EBX + Animated.length]  ; get length
+	LEA EDX, [0]
   DIV EBX
     
-  ;; dereference address
-  MOV EAX, [@@save_to]
-  MOV [EAX], EDX
-  
+  MOV EAX, [@@animated_ptr]
+  MOV [EAX + Animated.current], EDX
+
   RET
 ENDP getNextFrame
 
 PROC updateFrame    ; function expect image pointer to be ESI
-  ARG @@save_to:DWORD, @@images:DWORD, @@index:DWORD
+  ARG @@animated_ptr:DWORD
   USES EAX, EBX, ECX, EDX, ESI
 
-  MOV EAX, [@@images]  ; address of animated.images
-  MOV EAX, [EAX]       ; address of images list
-  MOV ESI, EAX         ; ESI hold start of list
+  MOV EAX, [@@animated_ptr]              ; get pointer
+  MOV EAX, [EAX + Animated.images]       ; get animated.images
+  MOV ESI, EAX                         ; ESI hold start of list images
 
-  MOV ECX, [@@index]   ; Find the Frame path on given index
-  JECXZ @@save         ; Skip if index = 0
+  MOV ECX, [@@animated_ptr] 
+  MOV ECX, [ECX + Animated.current]      ; Find the Frame path on given index
+  JECXZ @@save                           ; Skip if index = 0
   @@loop:
     @@next_frame:       ; Find the next path name by using the tailing 0
       LODSB
       CMP AL, 0
       JNE @@next_frame
     LOOP @@loop
-  
+
   @@save:
-    ;; dereference address
-    MOV EAX, [@@save_to]
-    MOV [EAX], ESI
+    MOV EAX, [@@animated_ptr]
+    MOV [EAX + Animated.image], ESI
     RET
 ENDP updateFrame
 
@@ -353,18 +405,34 @@ DATASEG
 				  DB 8, 25, 33 	; temp portal A -> blue
 				  DB 33, 25, 8 	; temp portal B -> orange
 
-  current DB "VIEW/IMG/LEVEL.BIN", 0	
 	empty DB "VIEW/IMG/EMPTY.BIN", 0
 	wall DB "VIEW/IMG/WALL.BIN", 0
 	untargetable DB "VIEW/IMG/UWALL.BIN", 0
 	portal_A DB "VIEW/IMG/PRT_A.BIN", 0
 	portal_B DB "VIEW/IMG/PRT_B.BIN", 0
+  character_R Animated <6, 0, OFFSET character_R_Images, OFFSET character_R_Images>
+
+  character_R_Images DB "VIEW/IMG/P_R_0.BIN", 0
+                     DB "VIEW/IMG/P_R_1.BIN", 0
+                     DB "VIEW/IMG/P_R_1.BIN", 0
+                     DB "VIEW/IMG/P_R_0.BIN", 0
+                     DB "VIEW/IMG/P_R_2.BIN", 0
+                     DB "VIEW/IMG/P_R_2.BIN", 0
+
+  character_L Animated <6, 0, OFFSET character_L_Images, OFFSET character_L_Images>
+  character_L_Images DB "VIEW/IMG/P_L_0.BIN", 0
+                     DB "VIEW/IMG/P_L_1.BIN", 0
+                     DB "VIEW/IMG/P_L_1.BIN", 0
+                     DB "VIEW/IMG/P_L_0.BIN", 0
+                     DB "VIEW/IMG/P_L_2.BIN", 0
+                     DB "VIEW/IMG/P_L_2.BIN", 0
 
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
 UDATASEG
   double_buff DD DBUFF_SIZE DUP(?)
+  level_buff DD DBUFF_SIZE DUP(?)
   lvl_buff DB LVL_BUFF_SIZE DUP(?)
   image_buff DB IMAGE_BUFF_SIZE DUP(?)
   block_buff DB BLOCK_BUFF_SIZE DUP(?)

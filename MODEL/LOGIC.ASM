@@ -25,9 +25,6 @@ PROC physicsHandler
   MOV EAX, [player.vx]
   ADD EAX, [player.x]
 
-  CMP EAX, WIDTH_BOUNDRY - BLOCK_SIZE
-  JE @@nextLevel
-
   CALL checkCollision, EAX, [player.y]
   CMP DL, FALSE
   JNE @@dont_move_x
@@ -69,14 +66,7 @@ PROC physicsHandler
     MOV [player.jumping], FALSE
 
   @@end:
-		MOV DL, FALSE
     RET
-
-	@@nextLevel:
-		MOV [player.x], 0
-		MOV [player.y], FLOOR
-		MOV DL,	TRUE		; set flag in DL to change level 
-		RET
 ENDP physicsHandler
 
 ; AABB collision
@@ -153,7 +143,6 @@ ENDP collisionHandler
 PROC loadLevel
 	ARG @@fileName:DWORD
 	CALL loadFile, [@@fileName], OFFSET level, LEVEL_SIZE
-
 	RET
 ENDP
 
@@ -167,8 +156,6 @@ DATASEG
   player  Player  <60, FLOOR>
   clone_A   Player  <portal_A.x, portal_A.y>
   clone_B   Player  <portal_B.x, portal_B.y>
-
-  laser Laser <FALSE>
 
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA

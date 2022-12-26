@@ -13,27 +13,61 @@ INCLUDE "INC/STD.INC"
 ;-----------------------------------------------------------
 CODESEG
 
-PROC stringEq
-  ARG @@string1:BYTE, @@string2:BYTE
-  USES EDI, ESI
+PROC directionNext
+  ARG @@direction
+  CMP [@@direction], UP
+  JE @@up
+  CMP [@@direction], UP_RIGHT
+  JE @@up_right
+  CMP [@@direction], RIGHT 
+  JE @@right
+  CMP [@@direction], DOWN_RIGHT 
+  JE @@down_right
+  CMP [@@direction], DOWN
+  JE @@down
+  CMP [@@direction], DOWN_LEFT
+  JE @@down_left
+  CMP [@@direction], LEFT
+  JE @@left
+  CMP [@@direction], DOWN_LEFT
+  JE @@down_left
 
-  CLD ; compare left to right
-
-  LEA ESI, [@@string1] ; first char of string1
-  LEA EDI, [@@string2] ; first char of string2
-
-  REPE CMPSB ; compares SI and DI bytes until mismatch
-  JE @@equal
-
-  @@not_equal:
-    MOV DL, FALSE
+  @@up:
+    MOV EAX, 0
+    MOV EDX, 1
     RET
 
-  @@equal:
-    MOV DL, TRUE
+  @@up_right:
+    MOV EAX, 1
+    MOV EDX, 1
     RET
-ENDP stringEq
 
+  @@right:
+    MOV EAX, 1
+    MOV EDX, 0
+    RET
+
+  @@down_right:
+    MOV EAX, 1
+    MOV EDX, -1
+    RET
+
+  @@down:
+    MOV EAX, 0
+    MOV EDX, -1
+    RET
+
+  @@down_left:
+    MOV EAX, -1
+    MOV EDX, -1
+    RET
+
+  @@left:
+    MOV EAX, -1
+    MOV EDX, 0
+    RET
+
+  ENDP directionNext
 ;-----------------------------------------------------------
 ; DATA
 ;-----------------------------------------------------------
