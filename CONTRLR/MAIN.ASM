@@ -134,8 +134,8 @@ PROC main
   CALL setVideoMode, 13H
   CALL updateColourPalette, 2
   CALL fillBackground, 00H
-  CALL loadLevel, OFFSET levels
-  CALL updateLevel, OFFSET levels
+  CALL loadLevel, [levels.image]
+  CALL updateLevel, [levels.image]
   CALL draw, OFFSET current, 0, 0
 
   @@gameLoop:
@@ -167,11 +167,13 @@ ENDP main
 ;-----------------------------------------------------------
 DATASEG
   ;; IMAGES FILES
-  levels DB "VIEW/IMG/LVL1.BIN", 0	
-        DB "VIEW/IMG/LVL2.BIN", 0	
-        DB "VIEW/IMG/LVL3.BIN", 0	
-        DB "VIEW/IMG/LVL4.BIN", 0	
-        DB "VIEW/IMG/LVL5.BIN", 0	
+
+  levels Animated <5, 0, OFFSET levels_list, OFFSET levels_list>
+  levels_list DB "VIEW/IMG/LVL1.BIN", 0	
+              DB "VIEW/IMG/LVL2.BIN", 0	
+              DB "VIEW/IMG/LVL3.BIN", 0	
+              DB "VIEW/IMG/LVL4.BIN", 0	
+              DB "VIEW/IMG/LVL5.BIN", 0	
 
   current DB "VIEW/IMG/LEVEL.BIN", 0	
 
