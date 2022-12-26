@@ -22,3 +22,4 @@ DOWN_LEFT EQU 7
 ;-----------------------------------------------------------
 
 GLOBAL directionNext:PROC
+GLOBAL opositeDirection:PROC

@@ -410,8 +410,10 @@ DATASEG
 	empty DB "VIEW/IMG/EMPTY.BIN", 0
 	wall DB "VIEW/IMG/WALL.BIN", 0
 	untargetable DB "VIEW/IMG/UWALL.BIN", 0
+
 	portal_A DB "VIEW/IMG/PRT_A.BIN", 0
 	portal_B DB "VIEW/IMG/PRT_B.BIN", 0
+
   character_R Animated <6, 0, OFFSET character_R_Images, OFFSET character_R_Images>
 
   character_R_Images DB "VIEW/IMG/P_R_0.BIN", 0
