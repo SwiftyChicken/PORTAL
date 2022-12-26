@@ -11,6 +11,7 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 ;-----------------------------------------------------------
 INCLUDE "INC/STD.INC"
 INCLUDE "INC/FILE.INC"
+INCLUDE "INC/DRAW.INC"
 INCLUDE "INC/LOGIC.INC"
 
 ;-----------------------------------------------------------
@@ -18,11 +19,15 @@ INCLUDE "INC/LOGIC.INC"
 ;-----------------------------------------------------------
 CODESEG
 
+; Return FALSE in DL for next level or end of game
 PROC physicsHandler
-  USES EAX, EBX, EDX
+  USES EAX, EBX
 
   MOV EAX, [player.vx]
   ADD EAX, [player.x]
+
+  CMP EAX, WIDTH_BOUNDRY - BLOCK_SIZE
+  JE @@nextLevel
 
   CALL checkCollision, EAX, [player.y]
   CMP DL, FALSE
@@ -65,7 +70,14 @@ PROC physicsHandler
     MOV [player.jumping], FALSE
 
   @@end:
+		MOV DL, FALSE
     RET
+
+	@@nextLevel:
+		MOV [player.x], 0
+		MOV [player.y], FLOOR
+		MOV DL,	TRUE		; set flag in DL to change level 
+		RET
 ENDP physicsHandler
 
 ; AABB collision
@@ -103,16 +115,16 @@ PROC collisionHandler
 
   ;; Check for out of bound
   CMP [@@x0], START_BOUNDRY
-  JL @outOfBound
+  JL @@outOfBound
 
   CMP [@@x0], WIDTH_BOUNDRY
-  JG @outOfBound
+  JG @@outOfBound
 
   CMP [@@y0], START_BOUNDRY
-  JL @outOfBound
+  JL @@outOfBound
 
   CMP [@@y0], HEIGHT_BOUNDRY
-  JG @outOfBound
+  JG @@outOfBound
 
   ; CONVERT Y: 80x50 -> 16x10
 	MOV EAX, [@@y0]
@@ -133,7 +145,7 @@ PROC collisionHandler
   MOV DL, [OFFSET level + EAX]
   RET
 
-  @outOfBound:
+  @@outOfBound:
     MOV DL, TRUE
     RET
 
@@ -153,7 +165,7 @@ DATASEG
   portal_A  Portal  <20, 40, OFFSET portal_B, OFFSET clone_A, UP>
   portal_B  Portal  <40, 20, OFFSET portal_A, OFFSET clone_B, DOWN>
 
-  player  Player  <0, FLOOR>
+  player  Player  <60, FLOOR>
   clone_A   Player  <portal_A.x, portal_A.y>
   clone_B   Player  <portal_B.x, portal_B.y>
 
