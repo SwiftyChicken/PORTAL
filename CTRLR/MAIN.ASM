@@ -158,6 +158,38 @@ PROC keyboardHandler
   RET
 ENDP keyboardHandler
 
+PROC moveCharacter
+	USES EDX	
+
+	CALL physicsHandler ;returns TRUE in DL to notify next level or end of game
+	CMP DL, FALSE
+	JE @@return
+	CALL nextLevel
+		
+	@@return:
+		RET
+ENDP moveCharacter
+
+PROC nextLevel
+	USES EAX
+
+	MOV EAX, [levels.current]
+	CMP EAX, [levels.length] 
+	JE @@endGame
+  ; Load next LEVEL
+  CALL getNextFrame, OFFSET levels.current, [levels.length], [levels.current]
+  CALL updateFrame, OFFSET levels.image, OFFSET levels.images, [levels.current]
+  ; Set next LEVEL
+  CALL loadLevel, [levels.image]
+  CALL updateLevel, [levels.image]
+	JMP @@return
+
+	@@endGame:
+
+	@@return:
+		RET
+ENDP nextLevel
+
 PROC checkEscape
   USES EAX
 
@@ -190,7 +222,7 @@ PROC main
 
   @@gameLoop:
     CALL keyboardHandler
-    CALL physicsHandler
+    CALL moveCharacter
     CALL fillBackground, 00H
     CALL draw, OFFSET current, 0, 0
     CMP [player.direction], RIGHT
@@ -216,8 +248,7 @@ ENDP main
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-  ;; IMAGES FILES
-
+  ;; IMAGE FILES
   levels Animated <5, 0, OFFSET levels_list, OFFSET levels_list>
   levels_list DB "VIEW/IMG/LVL1.BIN", 0	
               DB "VIEW/IMG/LVL2.BIN", 0	
@@ -226,15 +257,6 @@ DATASEG
               DB "VIEW/IMG/LVL5.BIN", 0	
 
   current DB "VIEW/IMG/LEVEL.BIN", 0	
-
-  ; keys to be tracked
-  keytracker  DW 4        ; amount of keys to track
-              DB 75, LEFT_KEY  ; left key
-              DB 77, RIGHT_KEY  ; right key
-              DB 72, UP_KEY  ; up key
-              DB 49, N_KEY  ; N key -> load next Level
-
-  N_released DB TRUE
 
   character_R Animated <6, 0, OFFSET character_R_Images, OFFSET character_R_Images>
   character_R_Images DB "VIEW/IMG/P_R_0.BIN", 0
@@ -250,7 +272,17 @@ DATASEG
                      DB "VIEW/IMG/P_L_1.BIN", 0
                      DB "VIEW/IMG/P_L_0.BIN", 0
                      DB "VIEW/IMG/P_L_2.BIN", 0
-                     DB "VIEW/IMG/P_L_2.BIN", 0
+           					 DB "VIEW/IMG/P_L_2.BIN", 0
+ 
+  ;; KEYS TO BE TRACKED
+  keytracker  DW 4  			      ; amount of keys to track
+              DB 75, LEFT_KEY	  ; left key
+              DB 77, RIGHT_KEY  ; right key
+              DB 72, UP_KEY  		; up key
+              DB 49, N_KEY  		; N key -> load next Level
+
+  N_released DB TRUE
+
 ;-----------------------------------------------------------
 ; UNSIGNED DATA
 ;-----------------------------------------------------------
