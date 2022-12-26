@@ -117,7 +117,7 @@ PROC collisionHandler
   ; CONVERT Y: 80x50 -> 16x10
 	MOV EAX, [@@y0]
 	MOV EBX, BLOCK_SIZE
-  LEA EDX, [0]          ;Clear EDX
+  XOR EDX, EDX          ;Clear EDX
 	DIV EBX
 	IMUL EAX, 16
 	PUSH EAX
@@ -125,7 +125,7 @@ PROC collisionHandler
   ;; CONVERT X in EAX: 80x50 -> 16x10
 	MOV EAX, [@@x0]
 	MOV EBX, BLOCK_SIZE
-  LEA EDX, [0]          ;Clear EDX
+  XOR EDX, EDX          ;Clear EDX
 	DIV EBX
 	POP EBX
 	ADD EAX, EBX

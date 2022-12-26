@@ -104,7 +104,6 @@ PROC fillBackground
   REP STOSD
 
   RET
-
 ENDP fillBackground
 
 PROC draw
@@ -176,7 +175,7 @@ PROC getNextFrame
   MOV EAX, [@@current]
   INC EAX
   MOV EBX, [@@length]
-  LEA EDX, [0]
+	XOR EDX, EDX
   DIV EBX
     
   ;; dereference address
@@ -264,7 +263,7 @@ PROC drawBlock
     ;; Calculate loctation into EAX
     MOV EAX, SBUFF_SIZE 
     SUB EAX, [@@location]       ; value will go from [0 -> 159]
-    LEA EDX, [0]
+		XOR EDX, EDX
     MOV EBX, SBW
     DIV EBX                     ; x -> EDX and y -> EAX
 
@@ -312,8 +311,6 @@ PROC generateLevel
   MOV AX, FBW
   MOV [OFFSET filebuff + 2], AX
 
-  LEA EAX, [0]
-
   ; LVL that needs to be drawn
   MOV ESI, OFFSET sbuff
 
@@ -332,7 +329,7 @@ ENDP generateLevel
 ;-----------------------------------------------------------
 DATASEG
   palette DB 40, 43, 36   ; white -> green
-				  DB 13, 13, 13 	; black - dark gray
+				  DB 13, 13, 13 	; black -> dark gray
 
   current DB "VIEW/IMG/LEVEL.BIN", 0	
 	empty DB "VIEW/IMG/EMPTY.BIN", 0
