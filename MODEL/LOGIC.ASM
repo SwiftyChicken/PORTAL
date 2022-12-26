@@ -141,14 +141,52 @@ PROC collisionHandler
 	POP EBX
 	ADD EAX, EBX
 
-  MOV DL, [OFFSET level + EAX]
-  RET
+  MOV DL, [OFFSET level + EAX] ; checks in level matrix if on coord 00H or 01H
+	CMP DL, FALSE				; if collision with wall, possibly a portal on that wall
+	JE @@return
+	CALL checkPortals
+
+	@@return:
+		RET
 
   @@outOfBound:
     MOV DL, TRUE
     RET
 
 ENDP collisionHandler 
+
+PROC checkPortals
+	USES EDX
+
+	MOV EAX, [@@x0]
+	MOV EBX, [@@y0]
+	; Check portal_A (IN PROCEDURE!!)
+	CALL checkPortal, [portal_A]
+	CMP DL, FALSE
+	JE @@return
+	;	Check portal_B
+	CALL checkPortal, [portal_B]
+
+	@@return:
+		RET
+ENDP checkPortals
+
+PROC checkPortal 
+	ARG @@portal:Portal
+
+	CMP	EAX, [@@portal].x
+	JNE @@return
+	CMP EBX, [@@portal].y
+	JNE @@return
+	;;TELEPORT
+	MOV [player], [[@@portal].clone]
+	MOV [[@@portal].clone], [player]
+	MOV DL, TRUE
+		
+	@@return:
+	MOV DL, FALSE
+	RET
+ENDP checkPortal
 
 PROC loadLevel
 	ARG @@fileName:DWORD
