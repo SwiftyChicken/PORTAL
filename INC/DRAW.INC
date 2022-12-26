@@ -43,5 +43,3 @@ GLOBAL updateLevel:PROC
 GLOBAL getNextFrame:PROC
 GLOBAL updateFrame:PROC
 GLOBAL updateColourPalette:PROC
-
-GLOBAL double_buff:DWORD:DBUFF_SIZE
