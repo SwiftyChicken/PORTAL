@@ -155,6 +155,21 @@ PROC keyboardHandler
   RET
 ENDP keyboardHandler
 
+PROC checkLevelFinished
+  CMP [player.x], FINISH
+  JNE @@end
+    MOV [player.x], 0
+    MOV [player.y], FLOOR
+
+    CALL getNextFrame, OFFSET levels
+    CALL updateFrame, OFFSET levels
+
+    CALL loadLevel, [levels.image]
+    CALL updateLevel, [levels.image]
+  @@end:
+    RET
+ENDP checkLevelFinished
+
 PROC exit
 	USES EAX
 	CALL setVideoMode, 03H
@@ -193,6 +208,7 @@ PROC main
     @@next:
       CALL waitVBI
       CALL updateVideoBuffer
+      CALL checkLevelFinished
 	    MOV AL, [__keyb_rawScanCode] ; last pressed key
 	    CMP AL, 01H
 	    JNE	@@gameLoop

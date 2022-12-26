@@ -88,11 +88,11 @@ PROC updateColourPalette
 	RET
 ENDP updateColourPalette
 
-PROC fillBackground
-  ARG @@color:BYTE
+PROC fillBuffer
+  ARG @@color:BYTE, @@buffer:DWORD
   USES EAX, ECX, EDI
 
-  MOV EDI, OFFSET double_buff ; Frame buffer start address
+  MOV EDI, [@@buffer] ; Frame buffer start address
   
   MOV AL, [@@color]
   MOV AH, AL
@@ -105,7 +105,7 @@ PROC fillBackground
   REP STOSD
 
   RET
-ENDP fillBackground
+ENDP fillBuffer
 
 PROC draw
   ARG @@image:DWORD, @@column:DWORD, @@row:DWORD
@@ -195,6 +195,8 @@ PROC updateLevel
 
 	CALL loadFile, [@@newLevel], OFFSET lvl_buff, LVL_BUFF_SIZE             ; Load LVL#.BIN in lvl_buff
   CALL generateLevel                                                ; Generates the level from lvl_buff -> image_buff
+
+  CALL fillBuffer, 00H, OFFSET level_buff
 
   CLD
   ; Set up Index registers
