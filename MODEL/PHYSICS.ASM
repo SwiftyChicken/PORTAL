@@ -150,7 +150,13 @@ ENDP
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
+  portal_A  Portal  <20, 40, OFFSET portal_B, OFFSET clone_A, UP>
+  portal_B  Portal  <40, 20, OFFSET portal_A, OFFSET clone_B, DOWN>
+
   player  Player  <0, FLOOR>
+  clone_A   Player  <portal_A.x, portal_A.y>
+  clone_B   Player  <portal_B.x, portal_B.y>
+
   laser Laser <FALSE>
 
 ;-----------------------------------------------------------

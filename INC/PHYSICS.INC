@@ -27,12 +27,28 @@ STRUC Player
 ENDS Player
 
 STRUC Laser
-  state dd ?
+  active dd ?
   direction dd ?
+  x dd ?
+  y dd ?
 ENDS Laser
+
+STRUC Portal
+  x dd ?
+  y dd ?
+  portal dd ?
+  clone dd ?
+  direction dd ?
+ENDS Portal
 
 GLOBAL physicsHandler:PROC
 GLOBAL loadLevel:PROC
 
+GLOBAL portal_A:Portal
+GLOBAL portal_B:Portal
+
 GLOBAL player:Player
+GLOBAL clone_A:Player
+GLOBAL clone_B:Player
+
 GLOBAL laser:Laser
