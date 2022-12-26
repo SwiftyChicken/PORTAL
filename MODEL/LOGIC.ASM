@@ -11,7 +11,7 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 ;-----------------------------------------------------------
 INCLUDE "INC/STD.INC"
 INCLUDE "INC/FILE.INC"
-INCLUDE "INC/PHYSICS.INC"
+INCLUDE "INC/LOGIC.INC"
 
 ;-----------------------------------------------------------
 ; CODE

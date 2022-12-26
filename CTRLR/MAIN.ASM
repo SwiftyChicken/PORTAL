@@ -12,7 +12,7 @@ ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 INCLUDE "INC/STD.INC"
 INCLUDE "INC/KEYB.INC"
 INCLUDE "INC/DRAW.INC"
-INCLUDE "INC/PHYSICS.INC"
+INCLUDE "INC/LOGIC.INC"
 
 ;-----------------------------------------------------------
 ; CODE

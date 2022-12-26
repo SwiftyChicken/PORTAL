@@ -13,7 +13,7 @@ LFLAGS = option quiet system pmodew name $@ file
 
 lib = OBJ\KEYB.OBJ OBJ\FILE.OBJ OBJ\STD.OBJ
 view = OBJ\DRAW.OBJ
-model = OBJ\PHYSICS.OBJ
+model = OBJ\LOGIC.OBJ
 controler = OBJ\MAIN.OBJ
 
 objs = $(lib) $(model) $(view) $(controler) 
@@ -25,7 +25,7 @@ dest = PORTAL.EXE
 .asm: LIB/
 .asm: MODEL/
 .asm: VIEW/
-.asm: CONTRLR/
+.asm: CTRLR/
 .asm.obj:
   del $@
   $(ASM) $(AFLAGS) $< $@
