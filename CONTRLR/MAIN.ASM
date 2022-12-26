@@ -59,6 +59,10 @@ PROC pressHandler
     MOV [player.direction], LEFT
     SUB [player.vx], 1
 
+    ; Don't change frame mid air
+    CMP [player.jumping], FALSE
+    JNE @@end
+
     ; Update Frame
     CALL getNextFrame, OFFSET character_L.current,[character_L.length], [character_L.current]
     CALL updateFrame, OFFSET character_L.image, OFFSET character_L.images, [character_L.current]
@@ -68,6 +72,10 @@ PROC pressHandler
   @@right:
     MOV [player.direction], RIGHT
     ADD [player.vx], 1
+
+    ; Don't change frame mid air
+    CMP [player.jumping], FALSE
+    JNE @@end
 
     ; Update Frame
     CALL getNextFrame, OFFSET character_R.current,[character_R.length], [character_R.current]
@@ -79,6 +87,13 @@ PROC pressHandler
     CMP [player.jumping], FALSE
     JNE @@end
       MOV [player.jumping], TRUE
+
+      ; Reset Frame mid air
+      MOV [character_L.current], 0
+      MOV [character_L.image], OFFSET character_L_Images
+      MOV [character_R.current], 0
+      MOV [character_R.image], OFFSET character_R_Images
+
       CMP [player.vy], 0
       JNE @@end
         MOV [player.vy], -5
