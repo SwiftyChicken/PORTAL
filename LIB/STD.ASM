@@ -17,7 +17,7 @@ PROC stringEq
   ARG @@string1:BYTE, @@string2:BYTE
   USES EDI, ESI
 
-  CLD ; comparte left to right
+  CLD ; compare left to right
 
   LEA ESI, [@@string1] ; first char of string1
   LEA EDI, [@@string2] ; first char of string2
