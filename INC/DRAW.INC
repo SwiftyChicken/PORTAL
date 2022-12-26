@@ -2,12 +2,44 @@
 ; VIEW\DRAW.ASM
 ;-------------------------------------------------------------------
 
+;-----------------------------------------------------------
+; MACROS
+;-----------------------------------------------------------
+SCALE EQU 4  ; image scale
+BLOCK_LEN EQU 5
+FRAME_BUFF_ADR EQU 0A0000h	; video memory address
+
+SCRW EQU 320	; screen width
+SCRH EQU 200	; screen height
+
+IMGBW EQU SCRW/SCALE	; max image width
+IMGBH EQU SCRH/SCALE	; max image height
+
+LVLBW EQU IMGBW/BLOCK_LEN	; LVL#.BIN width
+LVLBH EQU IMGBH/BLOCK_LEN	; LVL#.BIN height
+
+FLOOR EQU 42
+DBUFF_SIZE EQU SCRW*SCRH             ; Doublebuffer (= Size screen)
+IMAGE_BUFF_SIZE EQU (IMGBW*IMGBH)+2*2         ; Size maximum image file + 2 DW (= size image)
+LVL_BUFF_SIZE EQU LVLBW*LVLBH               ; Size of LVL#.BIN
+BLOCK_BUFF_SIZE EQU BLOCK_LEN*BLOCK_LEN ; Size of a LEVEL.BIN block
+
+;-----------------------------------------------------------
+; STRUC
+;-----------------------------------------------------------
+STRUC Animated
+  length DD ?
+  current DD ?
+  image DD ?
+  images DD ?
+ENDS
+
 GLOBAL setVideoMode:PROC
 GLOBAL updateVideoBuffer:PROC
 GLOBAL waitVBI:PROC
 GLOBAL fillBackground:PROC
-GLOBAL loadFile:PROC
 GLOBAL draw:PROC
+GLOBAL updateLevel:PROC
+GLOBAL getNextFrame:PROC
+GLOBAL updateFrame:PROC
 GLOBAL updateColourPalette:PROC
-
-GLOBAL dbuff:DWORD:16000

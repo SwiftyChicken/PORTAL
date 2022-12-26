@@ -6,15 +6,9 @@ P386
 MODEL FLAT, C
 ASSUME cs:_TEXT,ds:FLAT,es:FLAT,fs:FLAT,gs:FLAT
 
+INCLUDE "INC/STD.INC"
+INCLUDE "INC/FILE.INC"
 INCLUDE "INC/DRAW.INC"
-
-FBADR EQU 0A0000h	; video memory address
-SCRW EQU 320	; screen witdth
-SCRH EQU 200	; screen height
-SCALE EQU 4  ; image scale
-FLOOR EQU 42
-DBUFF_SIZE EQU (SCRW*SCRH)/4
-FBUFF_SIZE EQU DBUFF_SIZE+2
 
 ;-----------------------------------------------------------
 ; CODE
@@ -37,8 +31,8 @@ PROC updateVideoBuffer
   USES ESI, EDI, ECX
 
   CLD
-  MOV ESI, OFFSET dbuff
-  MOV EDI, FBADR
+  MOV ESI, OFFSET double_buff
+  MOV EDI, FRAME_BUFF_ADR
   
   MOV ECX, SCRW * SCRH ; Amount of pixels on screen
   REP MOVSB
@@ -84,7 +78,7 @@ PROC updateColourPalette
 	SAL EAX, 1
 	ADD ECX, EAX
 
-	MOV DX, 03C8h 	; DAC write port
+	MOV DX, 03C8h ; DAC write port
 	XOR AL, AL		; index of first color to change (0)
 	OUT DX, AL		; write to IO
 
@@ -98,7 +92,7 @@ PROC fillBackground
   ARG @@color:BYTE
   USES EAX, ECX, EDI
 
-  MOV EDI, OFFSET dbuff ; Frame buffer start address
+  MOV EDI, OFFSET double_buff ; Frame buffer start address
   
   MOV AL, [@@color]
   MOV AH, AL
@@ -111,66 +105,17 @@ PROC fillBackground
   REP STOSD
 
   RET
-
 ENDP fillBackground
-
-PROC loadFile
-	ARG @@fileName:DWORD, @@fileBuffer:DWORD, @@size:DWORD
-	USES EAX, EBX, EDX 
-
-	; open bin file, get filehandle in AX
-	MOV AL, 0 ; read only
-	MOV EDX, [@@fileName]
-	MOV AH, 3DH
-	INT 21H
-
-	MOV  EDX, OFFSET openErrorMsg
-	JC @@error ; carry flag is set if error occurs
-
-	; read bin file data
-	MOV BX, AX ; move filehandle to bx
-	MOV ECX, [@@size]
-	MOV EDX, [@@fileBuffer]
-	MOV AH, 3FH
-	INT 21H
-
-	MOV  EDX, OFFSET readErrorMsg
-	JC @@error
-
-	; close bin file
-	MOV AH, 3EH
-	INT 21H
-
-	MOV  EDX, OFFSET closeErrorMsg
-	JC @@error
-	
-	MOV ECX, 1		; succes
-	RET
-
-	@@error:
-	MOV ECX, 0		; error
-	RET
-
-  @@printError:
-	  CALL setVideoMode, 03H
-	  MOV  AH, 09H
-	  INT  21H
-	  
-	  MOV	AH,00H
-	  INT	16H
-
-    RET
-ENDP loadFile
 
 PROC draw
   ARG @@image:DWORD, @@column:DWORD, @@row:DWORD
   USES ESI, EDI, ECX, EAX, EBX, EDX
 
-	CALL loadFile, [@@image], OFFSET filebuff, FBUFF_SIZE
+	CALL loadFile, [@@image], OFFSET image_buff, IMAGE_BUFF_SIZE
 
   ; Set up Index registers
-  MOV ESI, OFFSET filebuff
-  MOV EDI, OFFSET dbuff
+  MOV ESI, OFFSET image_buff
+  MOV EDI, OFFSET double_buff
 
   ; Calculate the drawing start position => EDI
   MOV EBX, [@@row]
@@ -211,6 +156,60 @@ PROC draw
     RET
 ENDP draw
 
+PROC updateLevel
+  ARG @@newLevel:DWORD
+  USES ESI, EDI, ECX, EAX, EBX, EDX
+
+	CALL loadFile, [@@newLevel], OFFSET lvl_buff, LVL_BUFF_SIZE             ; Load LVL#.BIN in lvl_buff
+  CALL generateLevel                                                ; Generates the level from lvl_buff -> image_buff
+  CALL generateFile, OFFSET current, OFFSET image_buff, IMAGE_BUFF_SIZE    ; Generate LEVEL.BIN from image_buff
+
+  RET
+ENDP updateLevel
+
+;;;;;;;;;;;;;;;;;;;;; ANIMATION PROCS ;;;;;;;;;;;;;;;;;;;;;;;
+
+PROC getNextFrame
+  ARG @@save_to:DWORD, @@length:DWORD, @@current:DWORD
+  USES EAX, EBX, EDX                       ; return value in EDX
+
+  MOV EAX, [@@current]
+  INC EAX
+  MOV EBX, [@@length]
+	XOR EDX, EDX
+  DIV EBX
+    
+  ;; dereference address
+  MOV EAX, [@@save_to]
+  MOV [EAX], EDX
+  
+  RET
+ENDP getNextFrame
+
+PROC updateFrame    ; function expect image pointer to be ESI
+  ARG @@save_to:DWORD, @@images:DWORD, @@index:DWORD
+  USES EAX, EBX, ECX, EDX, ESI
+
+  MOV EAX, [@@images]  ; address of animated.images
+  MOV EAX, [EAX]       ; address of images list
+  MOV ESI, EAX         ; ESI hold start of list
+
+  MOV ECX, [@@index]   ; Find the Frame path on given index
+  JECXZ @@save         ; Skip if index = 0
+  @@loop:
+    @@next_frame:       ; Find the next path name by using the tailing 0
+      LODSB
+      CMP AL, 0
+      JNE @@next_frame
+    LOOP @@loop
+  
+  @@save:
+    ;; dereference address
+    MOV EAX, [@@save_to]
+    MOV [EAX], ESI
+    RET
+ENDP updateFrame
+
 ;;;;;;;;;;;;;;;;;;;;; AUXILIARY PROCS ;;;;;;;;;;;;;;;;;;;;;;;
 
 PROC drawLine ; Auxiliary proc for draw procedure
@@ -236,25 +235,139 @@ PROC drawLine ; Auxiliary proc for draw procedure
   RET
 ENDP drawLine
 
+PROC drawBlock
+  ARG @@type:DWORD, @@location:DWORD
+  USES EAX, EBX, EDX, ECX, EDI, ESI
+
+  CMP [@@type], 00H
+  JE @@empty
+
+  CMP [@@type], 01H
+  JE @@wall
+
+  CMP [@@type], 02H
+  JE @@untargetable
+
+  CMP [@@type], 03H
+  JE @@portalA
+
+  CMP [@@type], 04H
+  JE @@portalB
+  RET
+
+  ;; LOAD the correct block sprite in block_buff
+  @@empty:
+	  CALL loadFile, OFFSET empty, OFFSET block_buff, BLOCK_BUFF_SIZE
+    JMP @@place_block
+
+  ;; LOAD the correct block sprite in block_buff
+  @@wall:
+	  CALL loadFile, OFFSET wall, OFFSET block_buff, BLOCK_BUFF_SIZE
+    JMP @@place_block
+
+  @@untargetable:
+	  CALL loadFile, OFFSET untargetable, OFFSET block_buff, BLOCK_BUFF_SIZE
+    JMP @@place_block
+
+  @@portalA:
+	  CALL loadFile, OFFSET portal_A, OFFSET block_buff, BLOCK_BUFF_SIZE
+    JMP @@place_block
+
+  @@portalB:
+	  CALL loadFile, OFFSET portal_B, OFFSET block_buff, BLOCK_BUFF_SIZE
+    JMP @@place_block
+
+  ;; PLACE the block_buff in the correct place in image_buff
+  @@place_block:
+
+    ;; Calculate loctation into EAX
+    MOV EAX, LVL_BUFF_SIZE 
+    SUB EAX, [@@location]       ; value will go from [0 -> 159]
+		XOR EDX, EDX
+    MOV EBX, LVLBW
+    DIV EBX                     ; x -> EDX and y -> EAX
+
+    MOV EBX, BLOCK_LEN
+
+    PUSH EDX                    ; y*[block_width]
+    MUL EBX                     ; value will be in [0 -> 45] so no need to look in EDX
+
+    POP EDX                     ; x*[block_width]
+    PUSH EAX
+    MOV EAX, EDX                
+    MUL EBX                     ; value will be in [0 -> 75] so no need to look in EDX
+
+    MOV EDX, EAX                ; restor x
+    POP EAX                     ; restor y
+
+    PUSH EDX                    ; image_buff location = y*IMGBW + x            
+    MOV EBX, IMGBW
+    MUL EBX         
+    POP EDX
+    ADD EAX, EDX
+
+    LEA EDI, [OFFSET image_buff + EAX + 2*2] ;Load destination location
+    MOV ECX, BLOCK_LEN          ; Outer loop = height
+    MOV ESI, OFFSET block_buff  ; Load sprite to draw
+    CLD
+    @@next_line:
+      PUSH ECX
+      MOV ECX, BLOCK_LEN       ; Inner loop = width
+      REP MOVSB                ; Place line lvl_buff -> image_buff
+      ADD EDI, IMGBW - BLOCK_LEN ; Load next line
+      POP ECX
+      LOOP @@next_line
+    RET
+
+ENDP drawBlock
+
+; generate a level in image_buff with the lvl_buff (later moved to LEVEL.BIN)
+PROC generateLevel
+  USES ESI, EAX, ECX
+
+  ; Add size of level first in image_buff
+  MOV AX, IMGBH
+  MOV [OFFSET image_buff], AX
+  MOV AX, IMGBW
+  MOV [OFFSET image_buff + 2], AX
+
+  ; LVL that needs to be drawn
+  MOV ESI, OFFSET lvl_buff
+
+  MOV ECX, LVL_BUFF_SIZE
+
+  MOV EDI, OFFSET image_buff
+  @@loop:                       ;Loop through each block of the level
+    LODSB                       ;Load byte from lvl_buff
+    CALL drawBlock, EAX, ECX    ;Place block in the buffer image_buff
+    LOOP @@loop
+  RET
+ENDP generateLevel
+
 ;-----------------------------------------------------------
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-  palette DB 40, 43, 36   ; background color - green
-				  DB 13, 13, 13 	; wall+character - dark gray
-				  DB 50, 50, 50		; shootable wall - light gray
-				  DB 0, 16, 63		; blue
-				  DB 63, 20, 2		; orange
+  palette DB 40, 43, 36   ; white -> green
+				  DB 13, 13, 13 	; black -> dark gray
+				  DB 8, 25, 33 	; temp portal A -> blue
+				  DB 33, 25, 8 	; temp portal B -> orange
 
-  openErrorMsg db "could not open file", 13, 10, '$'
-  readErrorMsg db "could not read data", 13, 10, '$'
-  closeErrorMsg db "error during file closing", 13, 10, '$'
+  current DB "VIEW/IMG/LEVEL.BIN", 0	
+	empty DB "VIEW/IMG/EMPTY.BIN", 0
+	wall DB "VIEW/IMG/WALL.BIN", 0
+	untargetable DB "VIEW/IMG/UWALL.BIN", 0
+	portal_A DB "VIEW/IMG/PRT_A.BIN", 0
+	portal_B DB "VIEW/IMG/PRT_B.BIN", 0
+
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
 UDATASEG
-  dbuff DD DBUFF_SIZE DUP(?)
-  filebuff DD FBUFF_SIZE DUP(?)
+  double_buff DD DBUFF_SIZE DUP(?)
+  lvl_buff DB LVL_BUFF_SIZE DUP(?)
+  image_buff DB IMAGE_BUFF_SIZE DUP(?)
+  block_buff DB BLOCK_BUFF_SIZE DUP(?)
 
 ; ----------------------------------------------------------
 ; STACK
