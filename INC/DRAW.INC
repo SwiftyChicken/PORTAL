@@ -23,12 +23,11 @@ SPRITE_BUFF_SIZE EQU BLOCK_LEN*BLOCK_LEN ; Size of a LEVEL.BIN block
 ;-----------------------------------------------------------
 ; STRUC
 ;-----------------------------------------------------------
-STRUC Player_View
-  right_frames DB 1
-  right DB "VIEW/IMG/P_R.BIN", 0 
-
-  left_frames DB 1
-  left DB "VIEW/IMG/P_L.BIN", 0 
+STRUC Animated
+  length DD ?
+  current DD ?
+  image DD ?
+  images DD ?
 ENDS
 
 GLOBAL setVideoMode:PROC
@@ -36,7 +35,9 @@ GLOBAL updateVideoBuffer:PROC
 GLOBAL waitVBI:PROC
 GLOBAL fillBackground:PROC
 GLOBAL draw:PROC
-GLOBAL updateColourPalette:PROC
 GLOBAL updateLevel:PROC
+GLOBAL getNextFrame:PROC
+GLOBAL updateFrame:PROC
+GLOBAL updateColourPalette:PROC
 
 GLOBAL dbuff:DWORD:DBUFF_SIZE

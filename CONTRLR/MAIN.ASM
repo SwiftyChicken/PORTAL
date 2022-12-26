@@ -48,11 +48,21 @@ PROC pressHandler
   @@left:
     MOV [player.direction], LEFT
     SUB [player.vx], 1
+
+    ; Update Frame
+    CALL getNextFrame, OFFSET character_L.current,[character_L.length], [character_L.current]
+    CALL updateFrame, OFFSET character_L.image, OFFSET character_L.images, [character_L.current]
+
     JMP @@end
 
   @@right:
     MOV [player.direction], RIGHT
     ADD [player.vx], 1
+
+    ; Update Frame
+    CALL getNextFrame, OFFSET character_R.current,[character_R.length], [character_R.current]
+    CALL updateFrame, OFFSET character_R.image, OFFSET character_R.images, [character_R.current]
+
     JMP @@end
 
   @@up:
@@ -122,10 +132,10 @@ PROC main
 
 	CALL __keyb_installKeyboardHandler
   CALL setVideoMode, 13H
-  CALL updateColourPalette, 6
+  CALL updateColourPalette, 2
   CALL fillBackground, 00H
-  CALL loadLevel, OFFSET level
-  CALL updateLevel, OFFSET level
+  CALL loadLevel, OFFSET levels
+  CALL updateLevel, OFFSET levels
   CALL draw, OFFSET current, 0, 0
 
   @@gameLoop:
@@ -135,17 +145,19 @@ PROC main
     CALL draw, OFFSET current, 0, 0
     CMP [player.direction], RIGHT
     JE @@right
-      CALL draw, OFFSET character_L, [player.x], [player.y]
+      CALL draw, [character_L.image], [player.x], [player.y]
       JMP @@next
+
     @@right:
-      CALL draw, OFFSET character_R, [player.x], [player.y]
+      CALL draw, [character_R.image], [player.x], [player.y]
+
     @@next:
-    CALL waitVBI
-    CALL updateVideoBuffer
-	  MOV AL, [__keyb_rawScanCode] ; last pressed key
-	  CMP AL, 01H
-	  JNE	@@gameLoop
-    CALL exit
+      CALL waitVBI
+      CALL updateVideoBuffer
+	    MOV AL, [__keyb_rawScanCode] ; last pressed key
+	    CMP AL, 01H
+	    JNE	@@gameLoop
+        CALL exit
 
   RET
 ENDP main
@@ -155,12 +167,13 @@ ENDP main
 ;-----------------------------------------------------------
 DATASEG
   ;; IMAGES FILES
-  level DB "VIEW/IMG/LVL1.BIN", 0	
+  levels DB "VIEW/IMG/LVL1.BIN", 0	
+        DB "VIEW/IMG/LVL2.BIN", 0	
+        DB "VIEW/IMG/LVL3.BIN", 0	
+        DB "VIEW/IMG/LVL4.BIN", 0	
+        DB "VIEW/IMG/LVL5.BIN", 0	
+
   current DB "VIEW/IMG/LEVEL.BIN", 0	
-  character_R DB "VIEW/IMG/P_R.BIN", 0
-  character_L DB "VIEW/IMG/P_L.BIN", 0
-
-
 
   ; keys to be tracked
   keytracker  DW 3        ; amount of keys to track
@@ -168,6 +181,17 @@ DATASEG
               DB 77, 4DH  ; right key
               DB 72, 48H  ; up key
 
+  character_R Animated <4, 0, OFFSET character_R_Images, OFFSET character_R_Images>
+  character_R_Images DB "VIEW/IMG/P_R_0.BIN", 0
+                     DB "VIEW/IMG/P_R_1.BIN", 0
+                     DB "VIEW/IMG/P_R_0.BIN", 0
+                     DB "VIEW/IMG/P_R_2.BIN", 0
+
+  character_L Animated <4, 0, OFFSET character_L_Images, OFFSET character_L_Images>
+  character_L_Images DB "VIEW/IMG/P_L_0.BIN", 0
+                     DB "VIEW/IMG/P_L_1.BIN", 0
+                     DB "VIEW/IMG/P_L_0.BIN", 0
+                     DB "VIEW/IMG/P_L_2.BIN", 0
 ;-----------------------------------------------------------
 ; UNSIGNED DATA
 ;-----------------------------------------------------------
