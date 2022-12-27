@@ -18,8 +18,77 @@ INCLUDE "INC/LOGIC.INC"
 ;-----------------------------------------------------------
 CODESEG
 
-PROC physicsHandler
+PROC createPortal
+  ARG @@x0, @@y0, @@direction:DWORD
   USES EAX, EBX, EDX
+
+  CALL directionNext, [@@direction]  ; Load (x+ -> EAX) & (y+ -> EDX)
+  PUSH EAX  ; = x+
+  PUSH EDX  ; = y+
+
+  ;; find first Block on path
+  @@findBlock:
+
+    ; Move vertically
+    MOV EAX, [@@y0]
+    POP EDX ; = y+
+    ADD EAX, EDX
+    MOV [@@y0], EAX
+
+    MOV EBX, EDX ; save y+
+
+    ; Move horizontally
+    MOV EAX, [@@x0]
+    POP EDX ; = x+
+    ADD EAX, EDX
+    MOV [@@x0], EAX
+
+    PUSH EDX ; = x+
+    PUSH EBX ; = y+
+
+    CALL collisionHandler, [@@x0], [@@y0] ; check upper left for collision
+    CMP DL, FALSE
+    JE @@findBlock
+
+    ;; restore Stack
+    POP EBX
+    POP EBX
+
+  CMP DL, 02H ; ignore untargatable wall
+  JE @@end
+    
+  CMP [nextPortal], PORTAL_A
+  JE @@create_A
+  JMP @@create_B
+  
+  @@create_A:
+    MOV [nextPortal], PORTAL_B
+    MOV EAX, [@@x0]
+    MOV [portal_A.x], EAX
+    MOV EAX, [@@y0]
+    MOV [portal_A.y], EAX
+    CALL opositeDirection, [@@direction]
+    MOV [portal_A.direction], EDX
+    MOV [portal_A.active], TRUE
+    RET
+
+  @@create_B:
+    MOV [nextPortal], PORTAL_A
+    MOV EAX, [@@x0]
+    MOV [portal_B.x], EAX
+    MOV EAX, [@@y0]
+    MOV [portal_B.y], EAX
+    CALL opositeDirection, [@@direction]
+    MOV [portal_B.direction], EDX
+    MOV [portal_B.active], TRUE
+    RET
+
+  @@end:
+    RET
+ENDP createPortal
+; Return FALSE in DL for next level or end of game
+PROC physicsHandler
+  USES EAX, EBX
 
   MOV EAX, [player.vx]
   ADD EAX, [player.x]
@@ -103,16 +172,16 @@ PROC collisionHandler
 
   ;; Check for out of bound
   CMP [@@x0], START_BOUNDRY
-  JL @outOfBound
+  JL @@outOfBound
 
   CMP [@@x0], WIDTH_BOUNDRY
-  JG @outOfBound
+  JG @@outOfBound
 
   CMP [@@y0], START_BOUNDRY
-  JL @outOfBound
+  JL @@outOfBound
 
   CMP [@@y0], HEIGHT_BOUNDRY
-  JG @outOfBound
+  JG @@outOfBound
 
   ; CONVERT Y: 80x50 -> 16x10
 	MOV EAX, [@@y0]
@@ -133,7 +202,7 @@ PROC collisionHandler
   MOV DL, [OFFSET level + EAX]
   RET
 
-  @outOfBound:
+  @@outOfBound:
     MOV DL, TRUE
     RET
 
@@ -149,13 +218,14 @@ ENDP
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-  portal_A  Portal  <20, 40, OFFSET portal_B, OFFSET clone_A, UP>
-  portal_B  Portal  <40, 20, OFFSET portal_A, OFFSET clone_B, DOWN>
+  portal_A  Portal  <0, 0, OFFSET portal_B, OFFSET clone_A, UP>
+  portal_B  Portal  <0, 0, OFFSET portal_A, OFFSET clone_B, DOWN>
 
-  player  Player  <0, FLOOR>
+  player  Player  <40, 20>
   clone_A   Player  <portal_A.x, portal_A.y>
   clone_B   Player  <portal_B.x, portal_B.y>
 
+  nextPortal DB PORTAL_A
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
