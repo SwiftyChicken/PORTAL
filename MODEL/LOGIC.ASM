@@ -57,14 +57,15 @@ PROC createPortal
     PUSH EBX ; = y+
 
     CALL collisionHandler, [@@x0], [@@y0] ; check upper left for collision
-    CMP DL, FALSE
+    CMP DL, EMPTY
     JE @@findBlock
 
     ;; restore Stack
     POP EBX
     POP EBX
 
-  CMP DL, 02H ; ignore untargatable wall
+  ;; Don't draw portal IF
+  CMP DL, UNTARGATABLE ; ignore untargatable wall
   JE @@end
 
   CMP DL, OUT_OF_BOUND ; ignore out of bound
@@ -117,7 +118,6 @@ PROC swapPortals
   RET
 ENDP swapPortals
 
-; Return FALSE in DL for next level or end of game
 PROC physicsHandler
   USES EAX, EBX
 
@@ -125,7 +125,7 @@ PROC physicsHandler
   ADD EAX, [player.x]
 
   CALL checkCollision, EAX, [player.y]
-  CMP DL, FALSE
+  CMP DL, EMPTY
   JNE @@dont_move_x
     MOV [player.x], EAX
   @@dont_move_x:
@@ -137,7 +137,7 @@ PROC physicsHandler
     ADD EAX, [player.y]
 
     CALL checkCollision, [player.x], EAX
-    CMP DL, FALSE
+    CMP DL, EMPTY
     JNE @@slow_down_y
       MOV [player.y], EAX
       INC [player.vy]
@@ -156,7 +156,7 @@ PROC physicsHandler
       DEC [player.vy]
       MOV EAX, [player.vy]
       SAR EAX, SLOW_DOWN
-      CMP EAX, 0  ;IF 0 it has hit the ground
+      CMP EAX, 0  ;IF y velocity 0 it has hit the ground
       JE @@dont_move_y
       JMP @@move_y
 
@@ -179,15 +179,15 @@ PROC checkCollision
 	ADD EBX, BLOCK_SIZE - 1
 
   CALL collisionHandler, [@@x0], [@@y0] ; check upper left for collision
-  CMP DL, FALSE
+  CMP DL, EMPTY
   JNE @return
 
   CALL collisionHandler, EAX, [@@y0]		; check upper right for collision
-  CMP DL, FALSE
+  CMP DL, EMPTY
   JNE @return
 
   CALL collisionHandler, [@@x0], EBX		; check lower left for collision
-  CMP DL, FALSE
+  CMP DL, EMPTY
   JNE @return
 
   CALL collisionHandler, EAX, EBX				; check lower right for collision
