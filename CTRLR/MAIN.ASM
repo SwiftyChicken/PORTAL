@@ -198,20 +198,21 @@ PROC keyboardHandler
     JE @@pressed
       CMP BL, FALSE
     JE @@release
-    JMP @@next
-      @@pressed:
-        LODSB
-        CALL pressHandler
-        JMP @@next
+      JMP @@next
 
-      @@release:
-        LODSB
-        CALL releaseHandler
+    @@pressed:
+      LODSB
+      CALL pressHandler
+      JMP @@next
 
-      @@next:
-        LOOP @@loop
+    @@release:
+      LODSB
+      CALL releaseHandler
+
+    @@next:
+      LOOP @@loop
     
-  RET
+    RET
 ENDP keyboardHandler
 
 PROC checkLevelFinished
@@ -298,15 +299,15 @@ DATASEG
               DB 77, RIGHT_KEY  ; right key
               DB 72, UP_KEY  ; up key
               DB 49, N_KEY  ; N key -> load next Level
-              DB ??, S_KEY  ; S key -> swap portal positions
-              DB ??, Z_KEY  ; Z key -> down_right portal
-              DB ??, E_KEY  ; E key -> down_right portal
-              DB ??, D_KEY  ; D key -> down_right portal
-              DB 46, C_KEY  ; C key -> down_right portal
-              DB 45, X_KEY  ; X key -> down portal
-              DB 44, W_KEY  ; W key -> down_left portal
-              DB ??, Q_KEY  ; Q key -> down_left portal
-              DB ??, A_KEY  ; A key -> down_left portal
+              DB 62, S_KEY  ; S key -> swap portal positions
+              DB 78, Z_KEY  ; Z key -> shoot portal up
+              DB 79, E_KEY  ; E key -> shoot portal up right
+              DB 63, D_KEY  ; D key -> shoot portal right
+              DB 46, C_KEY  ; C key -> shoot portal down right
+              DB 45, X_KEY  ; X key -> shoot portal down
+              DB 44, W_KEY  ; W key -> shoot portal down left
+              DB 61, Q_KEY  ; Q key -> shoot portal left 
+              DB 77, A_KEY  ; A key -> shoot portal up left
 
   N_released DB TRUE
   S_released DB TRUE
