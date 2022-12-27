@@ -56,6 +56,9 @@ PROC createPortal
 
   CMP DL, 02H ; ignore untargatable wall
   JE @@end
+
+  CMP DL, OUT_OF_BOUND ; ignore out of bound
+  JE @@end
     
   CMP [nextPortal], PORTAL_A
   JE @@create_A
@@ -203,7 +206,7 @@ PROC collisionHandler
   RET
 
   @@outOfBound:
-    MOV DL, TRUE
+    MOV DL, OUT_OF_BOUND
     RET
 
 ENDP collisionHandler 
