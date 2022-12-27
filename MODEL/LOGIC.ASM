@@ -21,6 +21,14 @@ CODESEG
 PROC createPortal
   ARG @@x0, @@y0, @@direction:DWORD
   USES EAX, EBX, EDX
+  ;; Center position from player
+  MOV EAX, [@@x0]
+  ADD EAX, 2
+  MOV [@@x0], EAX
+
+  MOV EAX, [@@y0]
+  ADD EAX, 2
+  MOV [@@y0], EAX
 
   CALL directionNext, [@@direction]  ; Load (x+ -> EAX) & (y+ -> EDX)
   PUSH EAX  ; = x+
