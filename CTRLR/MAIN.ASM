@@ -19,7 +19,7 @@ INCLUDE "INC/LOGIC.INC"
 ;-----------------------------------------------------------
 CODESEG
 
-;;;;;;;;;;;;;;;;;;;;; GENERAL IO ;;;;;;;;;;;;;;;;;;;;;;;;::::
+;;;;;;;;;;;;;;;;;;;;;;;;; KEYBOARD FUNCTIONS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 PROC releaseHandler
 
@@ -75,12 +75,33 @@ PROC releaseHandler
     MOV [N_released], TRUE
     RET
 
-  @@X_key:
+  @@swap_portal:
+    RET
+
+  @@shoot_up:
+    RET
+
+  @@shoot_up_right:
+    RET
+
+  @@shoot_right:
+    RET
+
+  @@shoot_down_right:
+    MOV [C_released], TRUE
+    RET
+
+  @@shoot_down:
     MOV [X_released], TRUE
     RET
 
-  @@C_key:
-    MOV [C_released], TRUE
+  @@shoot_down_left:
+    RET
+
+  @@shoot_left:
+    RET
+
+  @@shoot_up_left:
     RET
 
 ENDP releaseHandler
@@ -98,12 +119,33 @@ PROC pressHandler
 	CMP	AL, N_KEY
   JE @@N_key
 
-	CMP	AL, X_KEY
-  JE @@X_key
+	CMP	AL, S_KEY
+  JE @@swap_portal
+
+  ;; Shooting Keys
+	CMP	AL, Z_KEY
+  JE @@shoot_up
+
+	CMP	AL, E_KEY
+  JE @@shoot_up_right
+
+	CMP	AL, D_KEY
+  JE @@shoot_right
 
 	CMP	AL, C_KEY
-  JE @@C_key
+  JE @@shoot_down_right
 
+	CMP	AL, X_KEY
+  JE @@shoot_down
+
+	CMP	AL, W_KEY
+  JE @@shoot_down_left
+
+	CMP	AL, Q_KEY
+  JE @@shoot_left
+
+	CMP	AL, A_KEY
+  JE @@shoot_up_left
   RET
 
   @@left:
@@ -166,19 +208,41 @@ PROC pressHandler
       MOV [portal_A.active], FALSE
     RET
 
-  @@X_key:
+  @@swap_portal:
+    RET
+
+  @@shoot_up:
+    CMP [C_released], FALSE
+    JE @@end
+      MOV [C_released], FALSE
+      CALL createPortal, [player.x], [player.y], UP
+    RET
+
+  @@shoot_up_right:
+    RET
+
+  @@shoot_right:
+    RET
+
+  @@shoot_down_right:
+    RET
+
+  @@shoot_down:
     CMP [X_released], FALSE
     JE @@end
       MOV [X_released], FALSE
       CALL createPortal, [player.x], [player.y], DOWN
     RET
 
-  @@C_key:
-    CMP [C_released], FALSE
-    JE @@end
-      MOV [X_released], FALSE
-      CALL createPortal, [player.x], [player.y], UP
+  @@shoot_down_left:
     RET
+
+  @@shoot_left:
+    RET
+
+  @@shoot_up_left:
+    RET
+
   @@end:
     RET
 ENDP pressHandler
@@ -215,6 +279,8 @@ PROC keyboardHandler
     RET
 ENDP keyboardHandler
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; STATUS CHECKS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 PROC checkLevelFinished
   CMP [player.x], FINISH
   JNE @@end
@@ -241,6 +307,8 @@ PROC exit
   
 	RET
 ENDP exit
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MAIN ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 PROC main
   STI ;enable interupt
