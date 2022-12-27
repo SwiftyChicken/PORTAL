@@ -76,6 +76,7 @@ PROC releaseHandler
     RET
 
   @@swap_portal:
+    MOV [S_released], TRUE
     RET
 
   @@shoot_up:
@@ -215,6 +216,10 @@ PROC pressHandler
     RET
 
   @@swap_portal:
+    CMP [S_released], FALSE
+    JE @@end
+      MOV [S_released], FALSE
+      CALL swapPortals
     RET
 
   @@shoot_up:

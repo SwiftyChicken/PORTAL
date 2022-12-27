@@ -89,6 +89,24 @@ PROC createPortal
   @@end:
     RET
 ENDP createPortal
+
+PROC swapPortals
+  USES EAX, EDX
+  MOV EAX, [portal_A.x]
+  MOV EDX, [portal_A.y]
+
+  PUSH [portal_B.x]
+  POP [portal_A.x]
+
+  PUSH [portal_B.y]
+  POP [portal_A.y]
+
+  MOV [portal_B.x], EAX
+  MOV [portal_B.y], EDX
+
+  RET
+ENDP swapPortals
+
 ; Return FALSE in DL for next level or end of game
 PROC physicsHandler
   USES EAX, EBX
