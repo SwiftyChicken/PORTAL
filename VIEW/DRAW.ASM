@@ -44,7 +44,7 @@ PROC waitVBI
   USES EDX, ECX
 
   MOV DX, 03DAH ;VGA status port
-  MOV ECX, 2
+  MOV ECX, 3
 
   @@waitForEnd:
     IN AL, DX
@@ -88,11 +88,11 @@ PROC updateColourPalette
 	RET
 ENDP updateColourPalette
 
-PROC fillBackground
-  ARG @@color:BYTE
+PROC fillBuffer
+  ARG @@color:BYTE, @@buffer:DWORD
   USES EAX, ECX, EDI
 
-  MOV EDI, OFFSET double_buff ; Frame buffer start address
+  MOV EDI, [@@buffer] ; Frame buffer start address
   
   MOV AL, [@@color]
   MOV AH, AL
@@ -105,7 +105,7 @@ PROC fillBackground
   REP STOSD
 
   RET
-ENDP fillBackground
+ENDP fillBuffer
 
 PROC draw
   ARG @@image:DWORD, @@column:DWORD, @@row:DWORD
@@ -195,6 +195,8 @@ PROC updateLevel
 
 	CALL loadFile, [@@newLevel], OFFSET lvl_buff, LVL_BUFF_SIZE             ; Load LVL#.BIN in lvl_buff
   CALL generateLevel                                                ; Generates the level from lvl_buff -> image_buff
+
+  CALL fillBuffer, 00H, OFFSET level_buff
 
   CLD
   ; Set up Index registers
@@ -322,11 +324,11 @@ PROC drawBlock
     JMP @@place_block
 
   @@portalA:
-	  CALL loadFile, OFFSET portal_A, OFFSET block_buff, BLOCK_BUFF_SIZE
+	  CALL loadFile, OFFSET PRT_A, OFFSET block_buff, BLOCK_BUFF_SIZE
     JMP @@place_block
 
   @@portalB:
-	  CALL loadFile, OFFSET portal_B, OFFSET block_buff, BLOCK_BUFF_SIZE
+	  CALL loadFile, OFFSET PRT_B, OFFSET block_buff, BLOCK_BUFF_SIZE
     JMP @@place_block
 
   ;; PLACE the block_buff in the correct place in image_buff
@@ -408,8 +410,15 @@ DATASEG
 	empty DB "VIEW/IMG/EMPTY.BIN", 0
 	wall DB "VIEW/IMG/WALL.BIN", 0
 	untargetable DB "VIEW/IMG/UWALL.BIN", 0
-	portal_A DB "VIEW/IMG/PRT_A.BIN", 0
-	portal_B DB "VIEW/IMG/PRT_B.BIN", 0
+
+  PRT_A Animated <2, 0, OFFSET PRT_A_Images, OFFSET PRT_A_Images>
+	PRT_A_Images DB "VIEW/IMG/PRT_A.BIN", 0
+	                DB "VIEW/IMG/WALL.BIN", 0
+
+  PRT_B Animated <2, 0, OFFSET PRT_B_Images, OFFSET PRT_B_Images>
+	PRT_B_Images DB "VIEW/IMG/PRT_B.BIN", 0
+	                DB "VIEW/IMG/WALL.BIN", 0
+
   character_R Animated <6, 0, OFFSET character_R_Images, OFFSET character_R_Images>
 
   character_R_Images DB "VIEW/IMG/P_R_0.BIN", 0

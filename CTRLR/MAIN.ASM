@@ -319,6 +319,15 @@ DATASEG
   W_released DB TRUE
   Q_released DB TRUE
   A_released DB TRUE
+=======
+              DB 46, C_KEY  ; C key -> down_right portal
+              DB 45, X_KEY  ; X key -> down portal
+              DB 44, W_KEY  ; W key -> down_left portal
+
+  N_released DB TRUE
+  X_released DB TRUE
+  C_released DB TRUE
+>>>>>>> main
 
   levels Animated <5, 0, OFFSET levels_list, OFFSET levels_list>
   levels_list DB "VIEW/IMG/LVL1.BIN", 0	

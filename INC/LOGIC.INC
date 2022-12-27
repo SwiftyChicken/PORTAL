@@ -8,6 +8,9 @@ SLOW_DOWN EQU 1
 START_BOUNDRY EQU 0
 WIDTH_BOUNDRY EQU 79
 HEIGHT_BOUNDRY EQU 49
+FINISH EQU WIDTH_BOUNDRY - BLOCK_SIZE
+PORTAL_A EQU 0
+PORTAL_B EQU 1
 
 STRUC Player
   x dd ?
@@ -24,10 +27,12 @@ STRUC Portal
   portal dd ?
   clone dd ?
   direction dd ?
+  active dd FALSE
 ENDS Portal
 
 GLOBAL physicsHandler:PROC
 GLOBAL loadLevel:PROC
+GLOBAL createPortal:PROC
 
 GLOBAL portal_A:Portal
 GLOBAL portal_B:Portal

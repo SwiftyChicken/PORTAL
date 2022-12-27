@@ -37,7 +37,7 @@ ENDS
 GLOBAL setVideoMode:PROC
 GLOBAL updateVideoBuffer:PROC
 GLOBAL waitVBI:PROC
-GLOBAL fillBackground:PROC
+GLOBAL fillBuffer:PROC
 GLOBAL draw:PROC
 GLOBAL drawLevel:PROC
 GLOBAL updateLevel:PROC
@@ -49,3 +49,5 @@ GLOBAL updateColourPalette:PROC
 GLOBAL levels:Animated
 GLOBAL character_R:Animated
 GLOBAL character_L:Animated
+GLOBAL PRT_A:Animated
+GLOBAL PRT_B:Animated
