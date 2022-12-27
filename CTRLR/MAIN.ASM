@@ -79,12 +79,15 @@ PROC releaseHandler
     RET
 
   @@shoot_up:
+    MOV [Z_released], TRUE
     RET
 
   @@shoot_up_right:
+    MOV [E_released], TRUE
     RET
 
   @@shoot_right:
+    MOV [D_released], TRUE
     RET
 
   @@shoot_down_right:
@@ -96,12 +99,15 @@ PROC releaseHandler
     RET
 
   @@shoot_down_left:
+    MOV [W_released], TRUE
     RET
 
   @@shoot_left:
+    MOV [Q_released], TRUE
     RET
 
   @@shoot_up_left:
+    MOV [A_released], TRUE
     RET
 
 ENDP releaseHandler
@@ -219,12 +225,24 @@ PROC pressHandler
     RET
 
   @@shoot_up_right:
+    CMP [E_released], FALSE
+    JE @@end
+      MOV [E_released], FALSE
+      CALL createPortal, [player.x], [player.y], UP_RIGHT
     RET
 
   @@shoot_right:
+    CMP [D_released], FALSE
+    JE @@end
+      MOV [D_released], FALSE
+      CALL createPortal, [player.x], [player.y], RIGHT
     RET
 
   @@shoot_down_right:
+    CMP [C_released], FALSE
+    JE @@end
+      MOV [C_released], FALSE
+      CALL createPortal, [player.x], [player.y], DOWN_RIGHT
     RET
 
   @@shoot_down:
@@ -235,12 +253,24 @@ PROC pressHandler
     RET
 
   @@shoot_down_left:
+    CMP [W_released], FALSE
+    JE @@end
+      MOV [W_released], FALSE
+      CALL createPortal, [player.x], [player.y], DOWN_LEFT
     RET
 
   @@shoot_left:
+    CMP [Q_released], FALSE
+    JE @@end
+      MOV [Q_released], FALSE
+      CALL createPortal, [player.x], [player.y], LEFT
     RET
 
   @@shoot_up_left:
+    CMP [A_released], FALSE
+    JE @@end
+      MOV [A_released], FALSE
+      CALL createPortal, [player.x], [player.y], UP_LEFT
     RET
 
   @@end:
@@ -367,15 +397,15 @@ DATASEG
               DB 77, RIGHT_KEY  ; right key
               DB 72, UP_KEY  ; up key
               DB 49, N_KEY  ; N key -> load next Level
-              DB 62, S_KEY  ; S key -> swap portal positions
-              DB 78, Z_KEY  ; Z key -> shoot portal up
-              DB 79, E_KEY  ; E key -> shoot portal up right
-              DB 63, D_KEY  ; D key -> shoot portal right
+              DB 31, S_KEY  ; S key -> swap portal positions
+              DB 17, Z_KEY  ; Z key -> shoot portal up
+              DB 18, E_KEY  ; E key -> shoot portal up right
+              DB 32, D_KEY  ; D key -> shoot portal right
               DB 46, C_KEY  ; C key -> shoot portal down right
               DB 45, X_KEY  ; X key -> shoot portal down
               DB 44, W_KEY  ; W key -> shoot portal down left
-              DB 61, Q_KEY  ; Q key -> shoot portal left 
-              DB 77, A_KEY  ; A key -> shoot portal up left
+              DB 30, Q_KEY  ; Q key -> shoot portal left 
+              DB 16, A_KEY  ; A key -> shoot portal up left
 
   N_released DB TRUE
   S_released DB TRUE
