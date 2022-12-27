@@ -22,12 +22,14 @@ PROC createPortal
   ARG @@x0, @@y0, @@direction:DWORD
   USES EAX, EBX, EDX
   ;; Center position from player
-  MOV EAX, [@@x0]
-  ADD EAX, 2
+  MOV EAX, BLOCK_SIZE
+  SHR EAX, 1
+  ADD EAX, [@@x0]
   MOV [@@x0], EAX
 
-  MOV EAX, [@@y0]
-  ADD EAX, 2
+  MOV EAX, BLOCK_SIZE
+  SHR EAX, 1
+  ADD EAX, [@@y0]
   MOV [@@y0], EAX
 
   CALL directionNext, [@@direction]  ; Load (x+ -> EAX) & (y+ -> EDX)
