@@ -21,6 +21,7 @@ CODESEG
 PROC createPortal
   ARG @@x0, @@y0, @@direction:DWORD
   USES EAX, EBX, EDX
+
   ;; Center position from player
   MOV EAX, BLOCK_SIZE
   SHR EAX, 1
@@ -32,11 +33,12 @@ PROC createPortal
   ADD EAX, [@@y0]
   MOV [@@y0], EAX
 
-  CALL directionNext, [@@direction]  ; Load (x+ -> EAX) & (y+ -> EDX)
+  ;; Load the position increments of next position (x+ -> EAX) & (y+ -> EDX)
+  CALL directionNext, [@@direction]  
   PUSH EAX  ; = x+
   PUSH EDX  ; = y+
 
-  ;; find first Block on path
+  ;; Find first Block on path
   @@findBlock:
 
     ; Move vertically
@@ -56,21 +58,97 @@ PROC createPortal
     PUSH EDX ; = x+
     PUSH EBX ; = y+
 
-    CALL collisionHandler, [@@x0], [@@y0] ; check upper left for collision
+    CALL checkCollision, [@@x0], [@@y0] ; check upper left for collision
     CMP DL, EMPTY
     JE @@findBlock
 
-    ;; restore Stack
-    POP EBX
-    POP EBX
+  ;; restore Stack
+  POP EBX ; = y+
+  POP EAX ; = x+
 
   ;; Don't draw portal IF
-  CMP DL, UNTARGATABLE ; ignore untargatable wall
+  CMP DL, UNTARGETABLE ; ignore untargatable wall
   JE @@end
 
   CMP DL, OUT_OF_BOUND ; ignore out of bound
   JE @@end
     
+  ;; Set the direction of Portal entrance
+  CMP [@@direction], UP_RIGHT
+  JE @@up_right
+
+  CMP [@@direction], UP_LEFT
+  JE @@up_left
+
+  CMP [@@direction], DOWN_RIGHT
+  JE @@down_right
+  
+  CMP [@@direction], DOWN_LEFT
+  JE @@down_left
+
+  ; if not of the above direction openning is the oposite direction
+  CALL opositeDirection, [@@direction]
+  MOV [@@direction], EDX
+  JMP @@create_portal
+
+  ; find out block openning direction
+  @@up_right:
+    ; Check Block under it
+    MOV EBX, POS_DOWN ; y+ := POS_UP -> POS_DOWN
+    ADD EBX, [@@y0]   ; y of block under
+    ADD EAX, [@@x0]   ; x of block under
+    CALL checkCollision, EAX, EBX 
+    CMP DL, EMPTY
+    JE @@direction_down
+    JMP @@direction_left
+
+  @@up_left:
+    ; Check Block under it
+    MOV EBX, POS_DOWN ; y+ := POS_UP -> POS_DOWN
+    ADD EBX, [@@y0]   ; y of block under
+    ADD EAX, [@@x0]   ; x of block under
+    CALL checkCollision, EAX, EBX 
+    CMP DL, EMPTY
+    JE @@direction_down
+    JMP @@direction_right
+
+  @@down_right:
+    ; Check Block under it
+    MOV EBX, POS_UP ; y+ := POS_UP -> POS_DOWN
+    ADD EBX, [@@y0]   ; y of block under
+    ADD EAX, [@@x0]   ; x of block under
+    CALL checkCollision, EAX, EBX 
+    CMP DL, EMPTY
+    JE @@direction_up
+    JMP @@direction_left
+
+  @@down_left:
+    ; Check Block under it
+    MOV EBX, POS_UP ; y+ := POS_UP -> POS_DOWN
+    ADD EBX, [@@y0]   ; y of block under
+    ADD EAX, [@@x0]   ; x of block under
+    CALL checkCollision, EAX, EBX 
+    CMP DL, EMPTY
+    JE @@direction_up
+    JMP @@direction_right
+
+  @@direction_down:
+    MOV [@@direction], DOWN
+    JMP @@create_portal
+
+  @@direction_up:
+    MOV [@@direction], UP
+    JMP @@create_portal
+
+  @@direction_left:
+    MOV [@@direction], LEFT
+    JMP @@create_portal
+
+  @@direction_right:
+    MOV [@@direction], RIGHT
+    JMP @@create_portal
+
+  @@create_portal:
   CMP [nextPortal], PORTAL_A
   JE @@create_A
   JMP @@create_B
@@ -81,8 +159,8 @@ PROC createPortal
     MOV [portal_A.x], EAX
     MOV EAX, [@@y0]
     MOV [portal_A.y], EAX
-    CALL opositeDirection, [@@direction]
-    MOV [portal_A.direction], EDX
+    MOV EAX, [@@direction]
+    MOV [portal_A.direction], EAX
     MOV [portal_A.active], TRUE
     RET
 
@@ -92,8 +170,8 @@ PROC createPortal
     MOV [portal_B.x], EAX
     MOV EAX, [@@y0]
     MOV [portal_B.y], EAX
-    CALL opositeDirection, [@@direction]
-    MOV [portal_B.direction], EDX
+    MOV EAX, [@@direction]
+    MOV [portal_B.direction], EAX
     MOV [portal_B.active], TRUE
     RET
 
@@ -124,7 +202,7 @@ PROC physicsHandler
   MOV EAX, [player.vx]
   ADD EAX, [player.x]
 
-  CALL checkCollision, EAX, [player.y]
+  CALL checkBlockCollision, EAX, [player.y]
   CMP DL, EMPTY
   JNE @@dont_move_x
     MOV [player.x], EAX
@@ -136,7 +214,7 @@ PROC physicsHandler
     SAR EAX, SLOW_DOWN      ; Slown down vertical movement
     ADD EAX, [player.y]
 
-    CALL checkCollision, [player.x], EAX
+    CALL checkBlockCollision, [player.x], EAX
     CMP DL, EMPTY
     JNE @@slow_down_y
       MOV [player.y], EAX
@@ -169,7 +247,7 @@ PROC physicsHandler
 ENDP physicsHandler
 
 ; AABB collision
-PROC checkCollision
+PROC checkBlockCollision
 	ARG @@x0:DWORD, @@y0:DWORD
 	USES EAX, EBX
 
@@ -178,26 +256,26 @@ PROC checkCollision
 	MOV EBX, [@@y0]
 	ADD EBX, BLOCK_SIZE - 1
 
-  CALL collisionHandler, [@@x0], [@@y0] ; check upper left for collision
+  CALL checkCollision, [@@x0], [@@y0] ; check upper left for collision
   CMP DL, EMPTY
   JNE @return
 
-  CALL collisionHandler, EAX, [@@y0]		; check upper right for collision
+  CALL checkCollision, EAX, [@@y0]		; check upper right for collision
   CMP DL, EMPTY
   JNE @return
 
-  CALL collisionHandler, [@@x0], EBX		; check lower left for collision
+  CALL checkCollision, [@@x0], EBX		; check lower left for collision
   CMP DL, EMPTY
   JNE @return
 
-  CALL collisionHandler, EAX, EBX				; check lower right for collision
+  CALL checkCollision, EAX, EBX				; check lower right for collision
 
   @return:
     RET
-ENDP checkCollision
+ENDP checkBlockCollision
 
 ; Checks level and list of portals
-PROC collisionHandler 
+PROC checkCollision 
 	ARG @@x0:DWORD, @@y0:DWORD
 	USES EAX, EBX
 
@@ -237,7 +315,7 @@ PROC collisionHandler
     MOV DL, OUT_OF_BOUND
     RET
 
-ENDP collisionHandler 
+ENDP checkCollision 
 
 PROC loadLevel
 	ARG @@fileName:DWORD

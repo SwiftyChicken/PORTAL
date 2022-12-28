@@ -33,43 +33,43 @@ PROC directionNext
   JE @@up_left
 
   @@up:
-    MOV EAX, 0
-    MOV EDX, -1
+    MOV EAX, POS_SAME
+    MOV EDX, POS_UP
     RET
 
   @@up_right:
-    MOV EAX, 1
-    MOV EDX, -1
+    MOV EAX, POS_RIGHT
+    MOV EDX, POS_UP
     RET
 
   @@right:
-    MOV EAX, 1
-    MOV EDX, 0
+    MOV EAX, POS_RIGHT
+    MOV EDX, POS_SAME
     RET
 
   @@down_right:
-    MOV EAX, 1
-    MOV EDX, 1
+    MOV EAX, POS_RIGHT
+    MOV EDX, POS_DOWN
     RET
 
   @@down:
-    MOV EAX, 0
-    MOV EDX, 1
+    MOV EAX, POS_SAME
+    MOV EDX, POS_DOWN
     RET
 
   @@down_left:
-    MOV EAX, -1
-    MOV EDX, 1
+    MOV EAX, POS_LEFT
+    MOV EDX, POS_DOWN
     RET
 
   @@left:
-    MOV EAX, -1
-    MOV EDX, 0
+    MOV EAX, POS_LEFT
+    MOV EDX, POS_SAME
     RET
 
   @@up_left:
-    MOV EAX, -1
-    MOV EDX, -1
+    MOV EAX, POS_LEFT
+    MOV EDX, POS_UP
     RET
 
   ENDP directionNext
