@@ -203,6 +203,12 @@ PROC swapPortals
   MOV [portal_B.x], EAX
   MOV [portal_B.y], EDX
 
+  MOV EAX, [portal_A.direction]
+  MOV EDX, [portal_B.direction]
+
+  MOV [portal_A.direction], EDX
+  MOV [portal_B.direction], EAX
+
   RET
 ENDP swapPortals
 
