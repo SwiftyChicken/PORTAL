@@ -18,20 +18,29 @@ INCLUDE "INC/LOGIC.INC"
 ;-----------------------------------------------------------
 CODESEG
 
+PROC centerPostion
+  ARG @@pos_ptr:DWORD
+  USES EAX, EBX
+
+  MOV EBX, [@@pos_ptr]
+
+  MOV EAX, BLOCK_SIZE
+  SHR EAX, 1
+  ADD [EBX], EAX
+
+  RET
+ENDP centerPostion
+
 PROC createPortal
   ARG @@x0, @@y0, @@direction:DWORD
   USES EAX, EBX, EDX
 
   ;; Center position from player
-  MOV EAX, BLOCK_SIZE
-  SHR EAX, 1
-  ADD EAX, [@@x0]
-  MOV [@@x0], EAX
+  LEA EAX, [@@x0]
+  CALL centerPostion, EAX
 
-  MOV EAX, BLOCK_SIZE
-  SHR EAX, 1
-  ADD EAX, [@@y0]
-  MOV [@@y0], EAX
+  LEA EAX, [@@y0]
+  CALL centerPostion, EAX
 
   ;; Load the position increments of next position (x+ -> EAX) & (y+ -> EDX)
   CALL directionNext, [@@direction]  
@@ -149,10 +158,11 @@ PROC createPortal
     JMP @@create_portal
 
   @@create_portal:
-  CMP [nextPortal], PORTAL_A
-  JE @@create_A
-  JMP @@create_B
+    CMP [nextPortal], PORTAL_A
+    JE @@create_A
+    JMP @@create_B
   
+
   @@create_A:
     MOV [nextPortal], PORTAL_B
     MOV EAX, [@@x0]

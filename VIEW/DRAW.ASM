@@ -221,6 +221,28 @@ PROC resetAnimated
 
 ENDP resetAnimated
 
+PROC setPortalFrame
+  ARG @@animated_ptr:DWORD, @@portal_direction:DWORD
+  USES EAX, EBX, EDX                       ; return value in EDX
+
+  MOV EAX, [@@animated_ptr]           ; animated.current
+
+  CMP [@@portal_direction], UP
+  JE @@horizontal
+  CMP [@@portal_direction], DOWN
+  JE @@horizontal
+  JMP @@vertical
+
+  @@horizontal:
+    MOV [EAX + Animated.current], PRT_HORIZONTAL
+    RET
+
+  @@vertical:
+    MOV [EAX + Animated.current], PRT_VERTICAL
+    RET
+
+ENDP setPortalFrame
+
 PROC getNextFrame
   ARG @@animated_ptr:DWORD
   USES EAX, EBX, EDX                       ; return value in EDX
@@ -412,12 +434,12 @@ DATASEG
 	untargetable DB "VIEW/IMG/UWALL.BIN", 0
 
   PRT_A Animated <2, 0, OFFSET PRT_A_Images, OFFSET PRT_A_Images>
-	PRT_A_Images DB "VIEW/IMG/PRT_A.BIN", 0
-	                DB "VIEW/IMG/WALL.BIN", 0
+	PRT_A_Images DB "VIEW/IMG/PRT_A_H.BIN", 0
+	             DB "VIEW/IMG/PRT_A_V.BIN", 0
 
   PRT_B Animated <2, 0, OFFSET PRT_B_Images, OFFSET PRT_B_Images>
-	PRT_B_Images DB "VIEW/IMG/PRT_B.BIN", 0
-	                DB "VIEW/IMG/WALL.BIN", 0
+	PRT_B_Images DB "VIEW/IMG/PRT_B_H.BIN", 0
+	             DB "VIEW/IMG/PRT_B_V.BIN", 0
 
   character_R Animated <6, 0, OFFSET character_R_Images, OFFSET character_R_Images>
 

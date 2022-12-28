@@ -32,6 +32,7 @@ STRUC Portal
   clone dd ?
   direction dd ?
   active dd FALSE
+  size dd BLOCK_SIZE
 ENDS Portal
 
 GLOBAL physicsHandler:PROC

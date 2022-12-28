@@ -374,10 +374,15 @@ PROC main
     @@skip_right:
       CMP [portal_B.active], FALSE
       JE @@prt_a
+        CALL setPortalFrame, OFFSET PRT_B, [portal_B.direction]
+        CALL updateFrame, OFFSET PRT_B
         CALL draw, [PRT_B.image], [portal_B.x], [portal_B.y]
+
       @@prt_a:
         CMP [portal_A.active], FALSE
         JE @@next
+          CALL setPortalFrame, OFFSET PRT_A, [portal_A.direction]
+          CALL updateFrame, OFFSET PRT_A
           CALL draw, [PRT_A.image], [portal_A.x], [portal_A.y]
 
       @@next:
