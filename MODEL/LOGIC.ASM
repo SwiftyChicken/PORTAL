@@ -31,6 +31,27 @@ PROC centerPostion
   RET
 ENDP centerPostion
 
+PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
+  ARG @@x0_ptr:DWORD, @@y0_ptr:DWORD, @@direction:DWORD
+  USES EAX
+
+  ;; Load the position increments of next position (x+ -> EAX) & (y+ -> EDX)
+  CALL directionNext, [@@direction]  
+  
+  ;; Try portal from [x-half_size => x]
+
+  ;; Try portal from [x-size => x-half_size[
+
+  @@succeed:
+    MOV DL, TRUE  ; Couldn't fit the portal
+    RET
+
+  @@failed:
+    MOV DL, FALSE  ; Couldn't fit the portal
+    RET
+
+ENDP tryFitPortal
+
 PROC createPortal
   ARG @@x0, @@y0, @@direction:DWORD
   USES EAX, EBX, EDX
@@ -84,62 +105,57 @@ PROC createPortal
     
   ;; Set the direction of Portal entrance
   CMP [@@direction], UP_RIGHT
-  JE @@up_right
+  JNE @@check_up_left
+    ; Check Block under it
+    MOV EBX, POS_DOWN ; y+ := POS_UP -> POS_DOWN
+    ADD EBX, [@@y0]   ; y of block under
+    ADD EAX, [@@x0]   ; x of block under
+    CALL checkCollision, EAX, EBX 
+    CMP DL, EMPTY
+    JE @@direction_down
+    JMP @@direction_left
 
-  CMP [@@direction], UP_LEFT
-  JE @@up_left
+  @@check_up_left:
+    CMP [@@direction], UP_LEFT
+    JNE @@check_down_right
+      ; Check Block under it
+      MOV EBX, POS_DOWN ; y+ := POS_UP -> POS_DOWN
+      ADD EBX, [@@y0]   ; y of block under
+      ADD EAX, [@@x0]   ; x of block under
+      CALL checkCollision, EAX, EBX 
+      CMP DL, EMPTY
+      JE @@direction_down
+      JMP @@direction_right
 
-  CMP [@@direction], DOWN_RIGHT
-  JE @@down_right
+  @@check_down_right:
+    CMP [@@direction], DOWN_RIGHT
+    JNE @@check_down_left
+      ; Check Block under it
+      MOV EBX, POS_UP ; y+ := POS_UP -> POS_DOWN
+      ADD EBX, [@@y0]   ; y of block under
+      ADD EAX, [@@x0]   ; x of block under
+      CALL checkCollision, EAX, EBX 
+      CMP DL, EMPTY
+      JE @@direction_up
+      JMP @@direction_left
   
-  CMP [@@direction], DOWN_LEFT
-  JE @@down_left
+  @@check_down_left:
+    CMP [@@direction], DOWN_LEFT
+    JNE @@not_slanting
+      ; Check Block under it
+      MOV EBX, POS_UP ; y+ := POS_UP -> POS_DOWN
+      ADD EBX, [@@y0]   ; y of block under
+      ADD EAX, [@@x0]   ; x of block under
+      CALL checkCollision, EAX, EBX 
+      CMP DL, EMPTY
+      JE @@direction_up
+      JMP @@direction_right
 
-  ; if not of the above direction openning is the oposite direction
-  CALL opositeDirection, [@@direction]
-  MOV [@@direction], EDX
-  JMP @@create_portal
-
-  ; find out block openning direction
-  @@up_right:
-    ; Check Block under it
-    MOV EBX, POS_DOWN ; y+ := POS_UP -> POS_DOWN
-    ADD EBX, [@@y0]   ; y of block under
-    ADD EAX, [@@x0]   ; x of block under
-    CALL checkCollision, EAX, EBX 
-    CMP DL, EMPTY
-    JE @@direction_down
-    JMP @@direction_left
-
-  @@up_left:
-    ; Check Block under it
-    MOV EBX, POS_DOWN ; y+ := POS_UP -> POS_DOWN
-    ADD EBX, [@@y0]   ; y of block under
-    ADD EAX, [@@x0]   ; x of block under
-    CALL checkCollision, EAX, EBX 
-    CMP DL, EMPTY
-    JE @@direction_down
-    JMP @@direction_right
-
-  @@down_right:
-    ; Check Block under it
-    MOV EBX, POS_UP ; y+ := POS_UP -> POS_DOWN
-    ADD EBX, [@@y0]   ; y of block under
-    ADD EAX, [@@x0]   ; x of block under
-    CALL checkCollision, EAX, EBX 
-    CMP DL, EMPTY
-    JE @@direction_up
-    JMP @@direction_left
-
-  @@down_left:
-    ; Check Block under it
-    MOV EBX, POS_UP ; y+ := POS_UP -> POS_DOWN
-    ADD EBX, [@@y0]   ; y of block under
-    ADD EAX, [@@x0]   ; x of block under
-    CALL checkCollision, EAX, EBX 
-    CMP DL, EMPTY
-    JE @@direction_up
-    JMP @@direction_right
+  @@not_slanting:
+    ; if not of the above direction openning is the oposite direction
+    CALL opositeDirection, [@@direction]
+    MOV [@@direction], EDX
+    JMP @@create_portal
 
   @@direction_down:
     MOV [@@direction], DOWN
@@ -161,7 +177,6 @@ PROC createPortal
     CMP [nextPortal], PORTAL_A
     JE @@create_A
     JMP @@create_B
-  
 
   @@create_A:
     MOV [nextPortal], PORTAL_B
