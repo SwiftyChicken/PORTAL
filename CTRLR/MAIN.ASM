@@ -330,6 +330,7 @@ PROC checkLevelFinished
 
     MOV [portal_B.active], FALSE
     MOV [portal_A.active], FALSE
+
   @@end:
     RET
 ENDP checkLevelFinished
@@ -360,9 +361,14 @@ PROC main
   CALL drawLevel
 
   @@gameLoop:
+    ;; INPUT & LOGIC UPDATES
     CALL keyboardHandler
     CALL physicsHandler
+
+    ;; DRAW FUNCTIONS
     CALL drawLevel
+
+    ;;DRAW -> PLAYER ANIMATION
     CMP [player.direction], RIGHT
     JE @@right
       CALL draw, [character_L.image], [player.x], [player.y]
@@ -371,25 +377,37 @@ PROC main
       @@right:
         CALL draw, [character_R.image], [player.x], [player.y]
 
+    ;;DRAW -> PORTAL ANIMATION
     @@skip_right:
       CMP [portal_B.active], FALSE
       JE @@prt_a
-        CALL setPortalFrame, OFFSET PRT_B, [portal_B.direction]
-        CALL updateFrame, OFFSET PRT_B
-        CALL draw, [PRT_B.image], [portal_B.x], [portal_B.y]
+        PUSH EAX
+          CALL setPortalFrame, OFFSET PRT_B, [portal_B.direction]
+          
+          MOV EAX, [PRT_B.current]
+          CALL getNextFrame, EAX
+          CALL updateFrame, EAX
+          CALL draw, [EAX + Animated.image], [portal_B.x], [portal_B.y]
+        POP EAX
 
       @@prt_a:
         CMP [portal_A.active], FALSE
         JE @@next
-          CALL setPortalFrame, OFFSET PRT_A, [portal_A.direction]
-          CALL updateFrame, OFFSET PRT_A
-          CALL draw, [PRT_A.image], [portal_A.x], [portal_A.y]
+          PUSH EAX
+            CALL setPortalFrame, OFFSET PRT_A, [portal_A.direction]
 
+            MOV EAX, [PRT_A.current]
+            CALL getNextFrame, EAX
+            CALL updateFrame, EAX
+            CALL draw, [EAX + Animated.image], [portal_A.x], [portal_A.y]
+          POP EAX
+
+      ;; GAME CHECKS & SCREEN UPDATES
       @@next:
         CALL waitVBI
         CALL updateVideoBuffer
         CALL checkLevelFinished
-	      MOV AL, [__keyb_rawScanCode] ; last pressed key
+	      MOVZX EAX, [__keyb_rawScanCode] ; last pressed key
 	      CMP AL, 01H
 	      JNE	@@gameLoop
           CALL exit
