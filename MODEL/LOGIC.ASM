@@ -31,25 +31,216 @@ PROC centerPostion
   RET
 ENDP centerPostion
 
-PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
-  ARG @@x0_ptr:DWORD, @@y0_ptr:DWORD, @@direction:DWORD
+PROC tryFitHor
+  ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD
   USES EAX
+
+      ;; Check if start point in wall
+      CALL checkCollision, [@@x], [@@y]
+      CMP DL, WALL
+      JNE @@failed
+
+      ;; Check if end point in wall
+      MOV EAX, [@@x]
+      ADD EAX, BLOCK_SIZE - 1
+      CALL checkCollision, EAX, [@@y]
+      CMP DL, WALL
+      JNE @@failed
+
+      ;; Check opennings
+      MOV EAX, [@@x]
+      ADD EAX, [@@x_inc]
+      MOV [@@x], EAX
+
+      MOV EAX, [@@y]
+      ADD EAX, [@@y_inc]
+      MOV [@@y], EAX
+
+      ;; Check start point openning
+      CALL checkCollision, [@@x], [@@y]
+      CMP DL, EMPTY
+      JNE @@failed
+
+      ;; Check end point openning
+      MOV EAX, [@@x]
+      ADD EAX, BLOCK_SIZE - 1
+      CALL checkCollision, EAX, [@@y]
+      CMP DL, EMPTY
+      JNE @@failed
+
+      MOV DL, TRUE
+      RET
+
+    @@failed:
+      MOV DL, FALSE
+      RET
+ENDP tryFitHor
+
+PROC tryFitVert
+  ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD
+  USES EAX
+
+      ;; Check if start point in wall
+      CALL checkCollision, [@@x], [@@y]
+      CMP DL, WALL
+      JNE @@failed
+
+      ;; Check if end point in wall
+      MOV EAX, [@@y]
+      ADD EAX, BLOCK_SIZE - 1
+      CALL checkCollision, [@@x], EAX
+      CMP DL, WALL
+      JNE @@failed
+
+      ;; Check opennings
+      MOV EAX, [@@x]
+      ADD EAX, [@@x_inc]
+      MOV [@@x], EAX
+
+      MOV EAX, [@@y]
+      ADD EAX, [@@y_inc]
+      MOV [@@y], EAX
+
+      ;; Check start point openning
+      CALL checkCollision, [@@x], [@@y]
+      CMP DL, EMPTY
+      JNE @@failed
+
+      ;; Check end point openning
+      MOV EAX, [@@y]
+      ADD EAX, BLOCK_SIZE - 1
+      CALL checkCollision, [@@x], EAX
+      CMP DL, EMPTY
+      JNE @@failed
+
+      MOV DL, TRUE
+      RET
+
+    @@failed:
+      MOV DL, FALSE
+      RET
+ENDP tryFitVert
+
+PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
+  ARG @@x0_ptr:DWORD, @@y0_ptr:DWORD, @@direction:DWORD, @@x_inc:DWORD, @@y_inc:DWORD
+  USES EAX, EBX, ECX
 
   ;; Load the position increments of next position (x+ -> EAX) & (y+ -> EDX)
   CALL directionNext, [@@direction]  
-  
-  ;; Try portal from [x-half_size => x]
 
-  ;; Try portal from [x-size => x-half_size[
+  ;; Save increments to restore position later
+  MOV [@@x_inc], EAX
+  MOV [@@y_inc], EDX
+  
+  CMP [@@direction], UP
+  JE @@horizontally
+  CMP [@@direction], DOWN
+  JE @@horizontally
+  JMP @@vertically
+
+  @@horizontally:
+    ;; Try to fit portal from [x-half_size => x]
+    MOV ECX, BLOCK_SIZE
+    SHR ECX, 1
+
+    @@hor_try_1:
+      MOV EDX, [@@y0_ptr]
+      MOV EDX, [EDX]
+
+      MOV EAX, [@@x0_ptr]
+      MOV EAX, [EAX]
+      SUB EAX, ECX          ; x - <half_block_size -> 0>
+
+      PUSH EDX
+      CALL tryFitHor, EAX, EDX, [@@x_inc], [@@y_inc]
+      CMP DL, TRUE
+      POP EDX
+      JE @@succeed
+        DEC ECX
+        CMP ECX, 0
+        JGE @@hor_try_1
+
+    ;; Try portal from [x-size => x-half_size[
+    MOV ECX, BLOCK_SIZE
+    SHR ECX, 1
+
+    @@hor_try_2:
+      MOV EDX, [@@y0_ptr]
+      MOV EDX, [EDX]
+
+      MOV EAX, [@@x0_ptr]
+      MOV EAX, [EAX]
+      SUB EAX, BLOCK_SIZE
+      ADD EAX, ECX          ; x - <block_size -> half_block_size>
+
+      PUSH EDX
+      CALL tryFitHor, EAX, EDX, [@@x_inc], [@@y_inc]
+      CMP DL, TRUE
+      POP EDX
+      JE @@succeed
+        DEC ECX
+        CMP ECX, 0
+        JGE @@hor_try_2
+    JMP @@failed
+
+  @@vertically:
+    ;; Try portal from [y + half_size => x]
+    MOV ECX, BLOCK_SIZE
+    SHR ECX, 1
+
+    @@vert_try_1:
+      MOV EDX, [@@y0_ptr]
+      MOV EDX, [EDX]
+      SUB EDX, ECX          ; y + <half_block_size>
+
+      MOV EAX, [@@x0_ptr]
+      MOV EAX, [EAX]
+
+      PUSH EDX
+      CALL tryFitVert, EAX, EDX, [@@x_inc], [@@y_inc]
+      CMP DL, TRUE
+      POP EDX
+      JE @@succeed
+        DEC ECX
+        CMP ECX, 0
+        JGE @@vert_try_1
+
+    ;; Try portal from [x-size => x-half_size[
+    MOV ECX, BLOCK_SIZE
+    SHR ECX, 1
+
+    @@vert_try_2:
+      MOV EDX, [@@y0_ptr]
+      MOV EDX, [EDX]
+      SUB EDX, BLOCK_SIZE
+      ADD EDX, ECX          ; y - <block_size -> 0>
+
+      MOV EAX, [@@x0_ptr]
+      MOV EAX, [EAX]
+
+      PUSH EDX
+      CALL tryFitVert, EAX, EDX, [@@x_inc], [@@y_inc]
+      CMP DL, TRUE
+      POP EDX
+      JE @@succeed
+        DEC ECX
+        CMP ECX, 0
+        JGE @@vert_try_2
+    JMP @@failed
 
   @@succeed:
+    MOV EBX, [@@x0_ptr]
+    MOV [EBX], EAX      
+
+    MOV EBX, [@@y0_ptr]
+    MOV [EBX], EDX      
+
     MOV DL, TRUE  ; Couldn't fit the portal
     RET
 
   @@failed:
     MOV DL, FALSE  ; Couldn't fit the portal
     RET
-
 ENDP tryFitPortal
 
 PROC createPortal
@@ -98,10 +289,10 @@ PROC createPortal
 
   ;; Don't draw portal IF
   CMP DL, UNTARGETABLE ; ignore untargatable wall
-  JE @@end
+  JE @@return
 
   CMP DL, OUT_OF_BOUND ; ignore out of bound
-  JE @@end
+  JE @@return
     
   ;; Set the direction of Portal entrance
   CMP [@@direction], UP_RIGHT
@@ -155,24 +346,31 @@ PROC createPortal
     ; if not of the above direction openning is the oposite direction
     CALL opositeDirection, [@@direction]
     MOV [@@direction], EDX
-    JMP @@create_portal
+    JMP @@try_placing
 
   @@direction_down:
     MOV [@@direction], DOWN
-    JMP @@create_portal
+    JMP @@try_placing
 
   @@direction_up:
     MOV [@@direction], UP
-    JMP @@create_portal
+    JMP @@try_placing
 
   @@direction_left:
     MOV [@@direction], LEFT
-    JMP @@create_portal
+    JMP @@try_placing
 
   @@direction_right:
     MOV [@@direction], RIGHT
-    JMP @@create_portal
+    JMP @@try_placing
 
+  @@try_placing:
+    LEA EAX, [@@x0]
+    LEA EDX, [@@y0]
+    CALL tryFitPortal, EAX, EDX, [@@direction]
+    CMP DL, TRUE     ; Did the function succeed?
+    JNE @@return
+  
   @@create_portal:
     CMP [nextPortal], PORTAL_A
     JE @@create_A
@@ -200,7 +398,7 @@ PROC createPortal
     MOV [portal_B.active], TRUE
     RET
 
-  @@end:
+  @@return:
     RET
 ENDP createPortal
 
@@ -249,8 +447,10 @@ PROC physicsHandler
     CMP DL, EMPTY
     JNE @@slow_down_y
       MOV [player.y], EAX
-      INC [player.vy]
-      JMP @@end
+      CMP [player.vy], MAX_VELOCITY
+      JG @@return
+        INC [player.vy]
+        JMP @@return
   @@slow_down_y:
     CMP [player.vy], 0
     JL @@slow_up
@@ -273,7 +473,7 @@ PROC physicsHandler
     MOV [player.vy], 0
     MOV [player.jumping], FALSE
 
-  @@end:
+  @@return:
     RET
 ENDP physicsHandler
 
