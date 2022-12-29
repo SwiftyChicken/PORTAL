@@ -42,7 +42,7 @@ PROC tryFitHor
 
       ;; Check if end point in wall
       MOV EAX, [@@x]
-      ADD EAX, BLOCK_SIZE - 1
+      ADD EAX, PORTAL_SIZE - 1
       CALL checkCollision, EAX, [@@y]
       CMP DL, WALL
       JNE @@failed
@@ -63,7 +63,7 @@ PROC tryFitHor
 
       ;; Check end point openning
       MOV EAX, [@@x]
-      ADD EAX, BLOCK_SIZE - 1
+      ADD EAX, PORTAL_SIZE - 1
       CALL checkCollision, EAX, [@@y]
       CMP DL, EMPTY
       JNE @@failed
@@ -87,7 +87,7 @@ PROC tryFitVert
 
       ;; Check if end point in wall
       MOV EAX, [@@y]
-      ADD EAX, BLOCK_SIZE - 1
+      ADD EAX, PORTAL_SIZE - 1
       CALL checkCollision, [@@x], EAX
       CMP DL, WALL
       JNE @@failed
@@ -108,7 +108,7 @@ PROC tryFitVert
 
       ;; Check end point openning
       MOV EAX, [@@y]
-      ADD EAX, BLOCK_SIZE - 1
+      ADD EAX, PORTAL_SIZE - 1
       CALL checkCollision, [@@x], EAX
       CMP DL, EMPTY
       JNE @@failed
@@ -140,7 +140,7 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
 
   @@horizontally:
     ;; Try to fit portal from [x-half_size => x]
-    MOV ECX, BLOCK_SIZE
+    MOV ECX, PORTAL_SIZE
     SHR ECX, 1
 
     @@hor_try_1:
@@ -161,7 +161,7 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
         JGE @@hor_try_1
 
     ;; Try portal from [x-size => x-half_size[
-    MOV ECX, BLOCK_SIZE
+    MOV ECX, PORTAL_SIZE
     SHR ECX, 1
 
     @@hor_try_2:
@@ -170,7 +170,7 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
 
       MOV EAX, [@@x0_ptr]
       MOV EAX, [EAX]
-      SUB EAX, BLOCK_SIZE
+      SUB EAX, PORTAL_SIZE
       ADD EAX, ECX          ; x - <block_size -> half_block_size>
 
       PUSH EDX
@@ -185,7 +185,7 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
 
   @@vertically:
     ;; Try portal from [y + half_size => x]
-    MOV ECX, BLOCK_SIZE
+    MOV ECX, PORTAL_SIZE
     SHR ECX, 1
 
     @@vert_try_1:
@@ -206,13 +206,13 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
         JGE @@vert_try_1
 
     ;; Try portal from [x-size => x-half_size[
-    MOV ECX, BLOCK_SIZE
+    MOV ECX, PORTAL_SIZE
     SHR ECX, 1
 
     @@vert_try_2:
       MOV EDX, [@@y0_ptr]
       MOV EDX, [EDX]
-      SUB EDX, BLOCK_SIZE
+      SUB EDX, PORTAL_SIZE
       ADD EDX, ECX          ; y - <block_size -> 0>
 
       MOV EAX, [@@x0_ptr]
