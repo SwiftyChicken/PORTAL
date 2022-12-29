@@ -21,4 +21,4 @@ x86 assembly remake of Portal Prelude on the TI-84
         - hold a number in data segment that gives the amount of time to draw it
 
 - [ ] Animated monochrome portals
-    - Make a list of 2 Animated pointers (Vertical and Horizontal)
+    - Make monochrome portal animations
