@@ -24,14 +24,22 @@ IMAGE_BUFF_SIZE EQU (IMGBW*IMGBH)+2*2         ; Size maximum image file + 2 DW (
 LVL_BUFF_SIZE EQU LVLBW*LVLBH               ; Size of LVL#.BIN
 BLOCK_BUFF_SIZE EQU BLOCK_LEN*BLOCK_LEN ; Size of a LEVEL.BIN block
 
+PRT_HORIZONTAL EQU 0
+PRT_VERTICAL EQU 1*4
 ;-----------------------------------------------------------
 ; STRUC
 ;-----------------------------------------------------------
 STRUC Animated
-  length DD ?
+  length  DD ?
   current DD ?
-  image DD ?
-  images DD ?
+  image   DD ?
+  images  DD ?
+ENDS
+
+STRUC PortalView
+  current DD ?
+  frames  DD ?
+          DD ?
 ENDS
 
 GLOBAL setVideoMode:PROC
@@ -43,11 +51,12 @@ GLOBAL drawLevel:PROC
 GLOBAL updateLevel:PROC
 GLOBAL resetAnimated:PROC
 GLOBAL getNextFrame:PROC
+GLOBAL setPortalFrame:PROC
 GLOBAL updateFrame:PROC
 GLOBAL updateColourPalette:PROC
 
 GLOBAL levels:Animated
 GLOBAL character_R:Animated
 GLOBAL character_L:Animated
-GLOBAL PRT_A:Animated
-GLOBAL PRT_B:Animated
+GLOBAL PRT_A:PortalView
+GLOBAL PRT_B:PortalView

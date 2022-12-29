@@ -19,147 +19,242 @@ INCLUDE "INC/LOGIC.INC"
 ;-----------------------------------------------------------
 CODESEG
 
-;;;;;;;;;;;;;;;;;;;;; GENERAL IO ;;;;;;;;;;;;;;;;;;;;;;;;::::
+PROC nextLevel
+    MOV [player.x], 0
+    MOV [player.y], FLOOR
 
-PROC releaseHandler
+    CALL getNextFrame, OFFSET levels
+    CALL updateFrame, OFFSET levels
 
-	CMP	AL, LEFT_KEY
-  JE @@left
+    CALL loadLevel, [levels.image]
+    CALL updateLevel, [levels.image]
 
-	CMP	AL, RIGHT_KEY
-  JE @@right
+    MOV [portal_B.active], FALSE
+    MOV [portal_A.active], FALSE
 
-	CMP	AL, N_KEY
-  JE @@N_key
-
-	CMP	AL, X_KEY
-  JE @@X_key
-
-	CMP	AL, C_KEY
-  JE @@C_key
-  RET
-
-  @@left:
-    ; Reset Frame mid air
-    CALL resetAnimated, OFFSET character_L
-    CALL resetAnimated, OFFSET character_L
     RET
+ENDP nextLevel
 
-  @@right:
-    CALL resetAnimated, OFFSET character_R
-    RET
-
-  @@N_key:
-    MOV [N_released], TRUE
-    RET
-
-  @@X_key:
-    MOV [X_released], TRUE
-    RET
-
-  @@C_key:
-    MOV [C_released], TRUE
-    RET
-
-ENDP releaseHandler
+;;;;;;;;;;;;;;;;;;;;;;;;; KEYBOARD FUNCTIONS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 PROC pressHandler
 	CMP	AL, LEFT_KEY
-  JE @@left
-
-	CMP	AL, RIGHT_KEY
-  JE @@right
-  
-	CMP	AL, UP_KEY
-  JE @@up
-
-	CMP	AL, N_KEY
-  JE @@N_key
-
-	CMP	AL, X_KEY
-  JE @@X_key
-
-	CMP	AL, C_KEY
-  JE @@C_key
-
-  RET
-
-  @@left:
+  JNE @@check_right
     MOV [player.direction], LEFT
     SUB [player.vx], 1
 
     ; Don't change frame mid air
     CMP [player.jumping], FALSE
-    JNE @@end
+    JNE @@return
 
     ; Update Frame
     CALL getNextFrame, OFFSET character_L
     CALL updateFrame, OFFSET character_L
-
     RET
 
-  @@right:
-    MOV [player.direction], RIGHT
-    ADD [player.vx], 1
+  @@check_right:
+	  CMP	AL, RIGHT_KEY
+    JNE @@check_up
+      MOV [player.direction], RIGHT
+      ADD [player.vx], 1
 
-    ; Don't change frame mid air
-    CMP [player.jumping], FALSE
-    JNE @@end
+      ; Don't change frame mid air
+      CMP [player.jumping], FALSE
+      JNE @@return
 
-    ;; Update Frame
-    CALL getNextFrame, OFFSET character_R
-    CALL updateFrame, OFFSET character_R
+      ;; Update Frame
+      CALL getNextFrame, OFFSET character_R
+      CALL updateFrame, OFFSET character_R
+      RET
 
-    RET
+  @@check_up:
+	  CMP	AL, UP_KEY
+    JNE @@check_n
+      CMP [player.jumping], FALSE
+      JNE @@return
+        MOV [player.jumping], TRUE
 
-  @@up:
-    CMP [player.jumping], FALSE
-    JNE @@end
-      MOV [player.jumping], TRUE
+        ; Reset Frame mid air
+        CALL resetAnimated, OFFSET character_L
+        CALL resetAnimated, OFFSET character_R
+        
+        CMP [player.vy], 0
+        JNE @@return
+          MOV [player.vy], -5
+          RET
 
-      ; Reset Frame mid air
-      CALL resetAnimated, OFFSET character_L
-      CALL resetAnimated, OFFSET character_R
-      
-      CMP [player.vy], 0
-      JNE @@end
-        MOV [player.vy], -5
-        RET
+  @@check_n:
+	  CMP	AL, N_KEY
+    JNE @@check_s
+      CMP [N_released], FALSE
+      JE @@return
+        MOV [N_released], FALSE
+        CALL nextLevel
+      RET
 
-  @@N_key:
-    CMP [N_released], FALSE
-    JE @@end
-      MOV [N_released], FALSE
-      MOV [player.x], 0
-      MOV [player.y], FLOOR
-      ; Load next LEVEL
-      CALL getNextFrame, OFFSET levels
+  @@check_s:
+	  CMP	AL, S_KEY
+    JNE @@check_z
+      CMP [S_released], FALSE
+      JE @@return
+        MOV [S_released], FALSE
+        CALL swapPortals
+      RET
 
-      CALL updateFrame, OFFSET levels
-      ; Set next LEVEL
-      CALL loadLevel, [levels.image]
-      CALL updateLevel, [levels.image]
+  @@check_z:
+	  CMP	AL, Z_KEY
+    JNE @@check_e
+      CMP [Z_released], FALSE
+      JE @@return
+        MOV [Z_released], FALSE
+        CALL createPortal, [player.x], [player.y], UP
+      RET
 
-      MOV [portal_B.active], FALSE
-      MOV [portal_A.active], FALSE
-    RET
+  @@check_e:
+	  CMP	AL, E_KEY
+    JNE @@check_d
+      CMP [E_released], FALSE
+      JE @@return
+        MOV [E_released], FALSE
+        CALL createPortal, [player.x], [player.y], UP_RIGHT
+      RET
 
-  @@X_key:
-    CMP [X_released], FALSE
-    JE @@end
-      MOV [X_released], FALSE
-      CALL createPortal, [player.x], [player.y], DOWN
-    RET
+  @@check_d:
+	  CMP	AL, D_KEY
+    JNE @@check_c
+      CMP [D_released], FALSE
+      JE @@return
+        MOV [D_released], FALSE
+        CALL createPortal, [player.x], [player.y], RIGHT
+      RET
 
-  @@C_key:
-    CMP [C_released], FALSE
-    JE @@end
-      MOV [X_released], FALSE
-      CALL createPortal, [player.x], [player.y], UP
-    RET
-  @@end:
+  @@check_c:
+	  CMP	AL, C_KEY
+    JNE @@check_x
+      CMP [C_released], FALSE
+      JE @@return
+        MOV [C_released], FALSE
+        CALL createPortal, [player.x], [player.y], DOWN_RIGHT
+      RET
+
+  @@check_x:
+	  CMP	AL, X_KEY
+    JNE @@check_w
+      CMP [X_released], FALSE
+      JE @@return
+        MOV [X_released], FALSE
+        CALL createPortal, [player.x], [player.y], DOWN
+      RET
+
+  @@check_w:
+	  CMP	AL, W_KEY
+    JNE @@check_q
+      CMP [W_released], FALSE
+      JE @@return
+        MOV [W_released], FALSE
+        CALL createPortal, [player.x], [player.y], DOWN_LEFT
+      RET
+
+  @@check_q:
+	  CMP	AL, Q_KEY
+    JNE @@check_a
+      CMP [Q_released], FALSE
+      JE @@return
+        MOV [Q_released], FALSE
+        CALL createPortal, [player.x], [player.y], LEFT
+      RET
+
+  @@check_a:
+	  CMP	AL, A_KEY
+    JNE @@return
+      CMP [A_released], FALSE
+      JE @@return
+        MOV [A_released], FALSE
+        CALL createPortal, [player.x], [player.y], UP_LEFT
+      RET
+
+  @@return:
     RET
 ENDP pressHandler
+
+PROC releaseHandler
+	CMP	AL, LEFT_KEY
+  JNE @@check_right
+    ; Reset Frame mid air
+    CALL resetAnimated, OFFSET character_L
+    CALL resetAnimated, OFFSET character_L
+    RET
+
+  @@check_right:
+	  CMP	AL, RIGHT_KEY
+    JNE @@check_n
+      CALL resetAnimated, OFFSET character_R
+      RET
+
+  @@check_n:
+	  CMP	AL, N_KEY
+    JNE @@check_s
+      MOV [N_released], TRUE
+      RET
+
+  @@check_s:
+	  CMP	AL, S_KEY
+    JNE @@check_z
+      MOV [S_released], TRUE
+      RET
+
+  ;; Shooting Keys
+  @@check_z:
+	  CMP	AL, Z_KEY
+    JNE @@check_e
+      MOV [Z_released], TRUE
+      RET
+
+  @@check_e:
+	  CMP	AL, E_KEY
+    JNE @@check_d
+      MOV [E_released], TRUE
+      RET
+
+  @@check_d:
+	  CMP	AL, D_KEY
+    JNE @@check_c
+      MOV [D_released], TRUE
+      RET
+
+  @@check_c:
+	  CMP	AL, C_KEY
+    JNE @@check_x
+      MOV [C_released], TRUE
+      RET
+
+  @@check_x:
+	  CMP	AL, X_KEY
+    JNE @@check_w
+      MOV [X_released], TRUE
+      RET
+
+  @@check_w:
+	  CMP	AL, W_KEY
+    JNE @@check_q
+      MOV [W_released], TRUE
+      RET
+
+  @@check_q:
+	  CMP	AL, Q_KEY
+    JNE @@check_a
+      MOV [Q_released], TRUE
+      RET
+
+  @@check_a:
+	  CMP	AL, A_KEY
+    JNE @@return
+      MOV [A_released], TRUE
+      RET
+
+  @@return:
+    RET
+ENDP releaseHandler
 
 PROC keyboardHandler
   USES EAX, ECX, ESI
@@ -176,37 +271,30 @@ PROC keyboardHandler
     JE @@pressed
       CMP BL, FALSE
     JE @@release
-    JMP @@next
-      @@pressed:
-        LODSB
-        CALL pressHandler
-        JMP @@next
+      JMP @@next
 
-      @@release:
-        LODSB
-        CALL releaseHandler
+    @@pressed:
+      LODSB
+      CALL pressHandler
+      JMP @@next
 
-      @@next:
-        LOOP @@loop
+    @@release:
+      LODSB
+      CALL releaseHandler
+
+    @@next:
+      LOOP @@loop
     
-  RET
+    RET
 ENDP keyboardHandler
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; STATUS CHECKS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 PROC checkLevelFinished
   CMP [player.x], FINISH
-  JNE @@end
-    MOV [player.x], 0
-    MOV [player.y], FLOOR
-
-    CALL getNextFrame, OFFSET levels
-    CALL updateFrame, OFFSET levels
-
-    CALL loadLevel, [levels.image]
-    CALL updateLevel, [levels.image]
-
-    MOV [portal_B.active], FALSE
-    MOV [portal_A.active], FALSE
-  @@end:
+  JNE @@return
+    CALL nextLevel
+  @@return:
     RET
 ENDP checkLevelFinished
 
@@ -218,6 +306,8 @@ PROC exit
   
 	RET
 ENDP exit
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MAIN ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 PROC main
   STI ;enable interupt
@@ -234,9 +324,14 @@ PROC main
   CALL drawLevel
 
   @@gameLoop:
+    ;; INPUT & LOGIC UPDATES
     CALL keyboardHandler
     CALL physicsHandler
+
+    ;; DRAW FUNCTIONS
     CALL drawLevel
+
+    ;;DRAW -> PLAYER ANIMATION
     CMP [player.direction], RIGHT
     JE @@right
       CALL draw, [character_L.image], [player.x], [player.y]
@@ -245,20 +340,37 @@ PROC main
       @@right:
         CALL draw, [character_R.image], [player.x], [player.y]
 
+    ;;DRAW -> PORTAL ANIMATION
     @@skip_right:
       CMP [portal_B.active], FALSE
       JE @@prt_a
-        CALL draw, [PRT_B.image], [portal_B.x], [portal_B.y]
+        PUSH EAX
+          CALL setPortalFrame, OFFSET PRT_B, [portal_B.direction]
+          
+          MOV EAX, [PRT_B.current]
+          CALL getNextFrame, EAX
+          CALL updateFrame, EAX
+          CALL draw, [EAX + Animated.image], [portal_B.x], [portal_B.y]
+        POP EAX
+
       @@prt_a:
         CMP [portal_A.active], FALSE
         JE @@next
-          CALL draw, [PRT_A.image], [portal_A.x], [portal_A.y]
+          PUSH EAX
+            CALL setPortalFrame, OFFSET PRT_A, [portal_A.direction]
 
+            MOV EAX, [PRT_A.current]
+            CALL getNextFrame, EAX
+            CALL updateFrame, EAX
+            CALL draw, [EAX + Animated.image], [portal_A.x], [portal_A.y]
+          POP EAX
+
+      ;; GAME CHECKS & SCREEN UPDATES
       @@next:
         CALL waitVBI
         CALL updateVideoBuffer
         CALL checkLevelFinished
-	      MOV AL, [__keyb_rawScanCode] ; last pressed key
+	      MOVZX EAX, [__keyb_rawScanCode] ; last pressed key
 	      CMP AL, 01H
 	      JNE	@@gameLoop
           CALL exit
@@ -271,18 +383,31 @@ ENDP main
 ;-----------------------------------------------------------
 DATASEG
   ; keys to be tracked
-  keytracker  DW 7        ; amount of keys to track
+  keytracker  DW 13        ; amount of keys to track
               DB 75, LEFT_KEY  ; left key
               DB 77, RIGHT_KEY  ; right key
               DB 72, UP_KEY  ; up key
               DB 49, N_KEY  ; N key -> load next Level
-              DB 46, C_KEY  ; C key -> down_right portal
-              DB 45, X_KEY  ; X key -> down portal
-              DB 44, W_KEY  ; W key -> down_left portal
+              DB 31, S_KEY  ; S key -> swap portal positions
+              DB 17, Z_KEY  ; Z key -> shoot portal up
+              DB 18, E_KEY  ; E key -> shoot portal up right
+              DB 32, D_KEY  ; D key -> shoot portal right
+              DB 46, C_KEY  ; C key -> shoot portal down right
+              DB 45, X_KEY  ; X key -> shoot portal down
+              DB 44, W_KEY  ; W key -> shoot portal down left
+              DB 30, Q_KEY  ; Q key -> shoot portal left 
+              DB 16, A_KEY  ; A key -> shoot portal up left
 
   N_released DB TRUE
-  X_released DB TRUE
+  S_released DB TRUE
+  Z_released DB TRUE
+  E_released DB TRUE
+  D_released DB TRUE
   C_released DB TRUE
+  X_released DB TRUE
+  W_released DB TRUE
+  Q_released DB TRUE
+  A_released DB TRUE
 
   levels Animated <5, 0, OFFSET levels_list, OFFSET levels_list>
   levels_list DB "VIEW/IMG/LVL1.BIN", 0	
