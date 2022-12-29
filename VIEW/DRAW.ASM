@@ -180,12 +180,17 @@ PROC scaleBuff
 ENDP scaleBuff
 
 PROC drawLaser ; draw laser directly into double_buff
-  ARG @@x0:DWORD, @@y0:DWORD, @@direction:DWORD
-  USES EAX, EDX
-  CALL directionNext, [@@direction]  ; set up EAX (-> x) and EDX (-> y) to calculate next position
-
-
-
+  ARG @@x0:DWORD, @@y0:DWORD, @@x1:DWORD, @@y1:DWORD, @@direction:DWORD
+  USES EAX, EBX, EDX
+    CALL directionNext, [@@direction]  ; set up EAX (-> x) and EDX (-> y) to calculate next position
+    @@draw:
+      
+      MOV EBX, [@@x0]
+      CMP EBX, [@@x1]
+      JNE @@draw
+        MOV EBX, [@@y0]
+        CMP EBX, [@@y1]
+        JNE @@draw
   RET
 ENDP drawLaser
 
