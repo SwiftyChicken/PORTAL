@@ -439,19 +439,55 @@ DATASEG
 
   PRT_A PortalView <OFFSET PRT_A_H, OFFSET PRT_A_H, OFFSET PRT_A_V> 
 
-  PRT_A_H Animated <1, 0, OFFSET PRT_A_H_Images, OFFSET PRT_A_H_Images>
+  PRT_A_H Animated <10, 0, OFFSET PRT_A_H_Images, OFFSET PRT_A_H_Images>
 	PRT_A_H_Images DB "VIEW/IMG/PRT_A_H.BIN", 0
+                 DB "VIEW/IMG/PRT_A_H.BIN", 0
+                 DB "VIEW/IMG/PRT_A_H.BIN", 0
+                 DB "VIEW/IMG/PRT_A_H.BIN", 0
+                 DB "VIEW/IMG/PRT_A_H.BIN", 0
+                 DB "VIEW/IMG/PRT_C_H.BIN", 0
+                 DB "VIEW/IMG/PRT_C_H.BIN", 0
+                 DB "VIEW/IMG/PRT_C_H.BIN", 0
+                 DB "VIEW/IMG/PRT_C_H.BIN", 0
+                 DB "VIEW/IMG/PRT_C_H.BIN", 0
 
-  PRT_A_V Animated <1, 0, OFFSET PRT_A_V_Images, OFFSET PRT_A_V_Images>
+  PRT_A_V Animated <10, 0, OFFSET PRT_A_V_Images, OFFSET PRT_A_V_Images>
 	PRT_A_V_Images DB "VIEW/IMG/PRT_A_V.BIN", 0
+                 DB "VIEW/IMG/PRT_A_V.BIN", 0
+                 DB "VIEW/IMG/PRT_A_V.BIN", 0
+                 DB "VIEW/IMG/PRT_A_V.BIN", 0
+                 DB "VIEW/IMG/PRT_A_V.BIN", 0
+                 DB "VIEW/IMG/PRT_C_V.BIN", 0
+                 DB "VIEW/IMG/PRT_C_V.BIN", 0
+                 DB "VIEW/IMG/PRT_C_V.BIN", 0
+                 DB "VIEW/IMG/PRT_C_V.BIN", 0
+                 DB "VIEW/IMG/PRT_C_V.BIN", 0
 
   PRT_B PortalView <OFFSET PRT_B_H, OFFSET PRT_B_H, OFFSET PRT_B_V> 
 
-  PRT_B_H Animated <1, 0, OFFSET PRT_B_H_Images, OFFSET PRT_B_H_Images>
+  PRT_B_H Animated <10, 0, OFFSET PRT_B_H_Images, OFFSET PRT_B_H_Images>
 	PRT_B_H_Images DB "VIEW/IMG/PRT_B_H.BIN", 0
+                 DB "VIEW/IMG/PRT_B_H.BIN", 0
+                 DB "VIEW/IMG/PRT_B_H.BIN", 0
+                 DB "VIEW/IMG/PRT_B_H.BIN", 0
+                 DB "VIEW/IMG/PRT_B_H.BIN", 0
+                 DB "VIEW/IMG/PRT_C_H.BIN", 0
+                 DB "VIEW/IMG/PRT_C_H.BIN", 0
+                 DB "VIEW/IMG/PRT_C_H.BIN", 0
+                 DB "VIEW/IMG/PRT_C_H.BIN", 0
+                 DB "VIEW/IMG/PRT_C_H.BIN", 0
 
-  PRT_B_V Animated <1, 0, OFFSET PRT_B_V_Images, OFFSET PRT_B_V_Images>
+  PRT_B_V Animated <10, 0, OFFSET PRT_B_V_Images, OFFSET PRT_B_V_Images>
 	PRT_B_V_Images DB "VIEW/IMG/PRT_B_V.BIN", 0
+                 DB "VIEW/IMG/PRT_B_V.BIN", 0
+                 DB "VIEW/IMG/PRT_B_V.BIN", 0
+                 DB "VIEW/IMG/PRT_B_V.BIN", 0
+                 DB "VIEW/IMG/PRT_B_V.BIN", 0
+                 DB "VIEW/IMG/PRT_C_V.BIN", 0
+                 DB "VIEW/IMG/PRT_C_V.BIN", 0
+                 DB "VIEW/IMG/PRT_C_V.BIN", 0
+                 DB "VIEW/IMG/PRT_C_V.BIN", 0
+                 DB "VIEW/IMG/PRT_C_V.BIN", 0
 
   character_R Animated <6, 0, OFFSET character_R_Images, OFFSET character_R_Images>
 
