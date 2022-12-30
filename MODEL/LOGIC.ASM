@@ -485,10 +485,14 @@ PROC physicsHandler
     CMP DL, EMPTY
     JNE @@slow_down_y
       MOV [player.y], EAX
-      CMP [player.vy], MAX_VELOCITY
-      JG @@return
-        INC [player.vy]
-        JMP @@return
+      CMP [gravity_inc], TRUE
+        MOV [gravity_inc], TRUE
+      JNE @@return
+        MOV [gravity_inc], FALSE
+        CMP [player.vy], MAX_VELOCITY
+        JG @@return
+          INC [player.vy]
+          RET
   @@slow_down_y:
     CMP [player.vy], 0
     JL @@slow_up
@@ -604,6 +608,8 @@ DATASEG
   player    Player  <40, 20>
   clone_A   Player  <portal_A.x, portal_A.y>
   clone_B   Player  <portal_B.x, portal_B.y>
+
+  gravity_inc DB TRUE
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------

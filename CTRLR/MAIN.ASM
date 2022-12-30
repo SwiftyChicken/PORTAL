@@ -80,7 +80,7 @@ PROC pressHandler
         
         CMP [player.vy], 0
         JNE @@return
-          MOV [player.vy], -5
+          MOV [player.vy], -3
           RET
 
   @@check_n:
