@@ -44,7 +44,7 @@ PROC waitVBI
   USES EDX, ECX
 
   MOV DX, 03DAH ;VGA status port
-  MOV ECX, 3
+  MOV ECX, 2
 
   @@waitForEnd:
     IN AL, DX
@@ -106,6 +106,25 @@ PROC fillBuffer
 
   RET
 ENDP fillBuffer
+
+PROC clearImageBuffer
+  USES EAX, ECX, EDI
+
+  CLD
+  MOV EDI, OFFSET image_buff ; Frame buffer start address
+
+  MOV EAX, IMGBH
+  STOSW
+
+  MOV EAX, IMGBW
+  STOSW
+
+  XOR EAX, EAX
+  MOV ECX, IMAGE_BUFF_SIZE ; Amount of pixels on screen
+
+  REP STOSB
+  RET
+ENDP clearImageBuffer
 
 PROC draw
   ARG @@image:DWORD, @@column:DWORD, @@row:DWORD
@@ -179,20 +198,62 @@ PROC scaleBuff
     RET
 ENDP scaleBuff
 
-PROC drawLaser ; draw laser directly into double_buff
-  ARG @@x0:DWORD, @@y0:DWORD, @@x1:DWORD, @@y1:DWORD, @@direction:DWORD
-  USES EAX, EBX, EDX
+PROC drawLaser ; draw laser directly into image_buff
+  ARG @@x0:DWORD, @@y0:DWORD, @@x1:DWORD, @@y1:DWORD, @@number:DWORD, @@direction:DWORD
+  USES EAX, EBX, ECX, EDX
+    CALL clearImageBuffer
     CALL directionNext, [@@direction]  ; set up EAX (-> x) and EDX (-> y) to calculate next position
+    ;; Avoid portal location
+    SUB [@@x1], EAX
+    SUB [@@y1], EDX 
+
+    PUSH [@@number]
     @@draw:
+      ;; next draw position
+      ADD [@@x0], EAX
+      ADD [@@y0], EDX
       
-      MOV EBX, [@@x0]
-      CMP EBX, [@@x1]
-      JNE @@draw
-        MOV EBX, [@@y0]
-        CMP EBX, [@@y1]
+      ;; draw point
+      POP EBX
+      CMP EBX, TRUE
+      JNE @@reset
+        PUSH FALSE
+        CALL drawPoint, [@@x0], [@@y0]
+        JMP @@check
+
+      @@reset:
+        PUSH TRUE
+      ;; check if finished
+      @@check:
+        MOV EBX, [@@x0]
+        CMP EBX, [@@x1]
         JNE @@draw
-  RET
+          MOV EBX, [@@y0]
+          CMP EBX, [@@y1]
+          JNE @@draw
+
+    @@return:
+      POP EBX
+      CLD
+      ; Set up Index registers
+      MOV ESI, OFFSET image_buff
+      MOV EDI, OFFSET double_buff
+      CALL scaleBuff, 0, 0
+
+      RET
 ENDP drawLaser
+
+PROC drawPoint
+  ARG @@x:DWORD, @@y:DWORD
+  USES EAX, EBX, EDX
+    MOV EAX, [@@y]
+    MOV EBX, IMGBW
+    MUL EBX
+    ADD EAX, [@@x]
+    MOV [image_buff + EAX + 4], TRUE
+
+    RET
+ENDP drawPoint
 
 PROC updateLevel
   ARG @@newLevel:DWORD

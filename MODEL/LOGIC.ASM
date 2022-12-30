@@ -268,9 +268,11 @@ PROC createPortal
   SHR EBX, 1
 
   IMUL EAX, EBX
+  ADD EAX, [@@x0]
   MOV [laser.x0], EAX
-  
+
   IMUL EDX, EBX
+  ADD EDX, [@@y0]
   MOV [laser.y0], EDX
 
   ;; Find first Block on path

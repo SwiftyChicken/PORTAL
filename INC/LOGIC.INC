@@ -43,7 +43,7 @@ STRUC Laser
   x1 dd ?
   y1 dd ?
   direction dd ?
-  span dd 5
+  span dd 2
   active dd FALSE
 ENDS Laser
 

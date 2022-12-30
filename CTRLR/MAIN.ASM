@@ -335,15 +335,20 @@ PROC main
     CMP [player.direction], RIGHT
     JE @@right
       CALL draw, [character_L.image], [player.x], [player.y]
-      JMP @@skip_right
+      JMP @@laser_animation
 
       @@right:
         CALL draw, [character_R.image], [player.x], [player.y]
 
     ;;DRAW -> LASER ANIMATION
+    @@laser_animation:
+      CMP [laser.active], FALSE
+      JE @@portal_animation
+        CALL useLaser
+        CALL drawLaser, [laser.x0], [laser.y0], [laser.x1], [laser.y1], [laser.active], [laser.direction]
 
     ;;DRAW -> PORTAL ANIMATION
-    @@skip_right:
+    @@portal_animation:
       CMP [portal_B.active], FALSE
       JE @@prt_a
         PUSH EAX
