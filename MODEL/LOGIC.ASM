@@ -591,6 +591,46 @@ PROC checkCollision
 
 ENDP checkCollision 
 
+;; check if the lines A and B are intersecting
+PROC checkIntersection
+  ARG @@A_x0:DWORD, @@A_y0:DWORD, @@A_x1:DWORD, @@A_y1:DWORD, @@B_x0:DWORD, @@B_y0:DWORD, @@B_x1:DWORD, @@B_y1:DWORD
+  USES EAX, EBX
+  ;; HERE SHOULD COME SOME MADMAN CALCULATIONS DX
+  ;; Slope of line A
+  ; y1 - y0
+  MOV EAX, [@@A_y1]
+  SUB EAX, [@@A_y0]
+
+  ; x1 - x0
+  MOV EBX, [@@A_x1]
+  SUB EBX, [@@A_x0]
+
+  ; slope_A = (y1 - y0)/(x1 - x0)
+  MOV EDX, [0]
+  IDIV EBX
+
+  PUSH EAX ; save slope_A on stack
+
+  ;; Slope of line B
+  ; y1 - y0
+  MOV EAX, [@@B_y1]
+  SUB EAX, [@@B_y0]
+
+  ; x1 - x0
+  MOV EBX, [@@B_x1]
+  SUB EBX, [@@B_x0]
+
+  ; slope_B = (y1 - y0)/(x1 - x0)
+  MOV EDX, [0]
+  IDIV EBX
+
+  PUSH EAX ; save slope_B on stack
+
+  @@not_found:
+    MOV EDX, FALSE
+      RET
+ENDP checkIntersection
+
 PROC loadLevel
 	ARG @@fileName:DWORD
 	CALL loadFile, [@@fileName], OFFSET level, LEVEL_SIZE
