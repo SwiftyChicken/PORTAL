@@ -19,14 +19,17 @@ INCLUDE "INC/LOGIC.INC"
 CODESEG
 
 PROC centerPostion
-  ARG @@pos_ptr:DWORD
-  USES EAX, EBX
+  ARG @@x_ptr:DWORD, @@y_ptr:DWORD
+  USES EAX, EBX, EDX
 
-  MOV EBX, [@@pos_ptr]
+  MOV EAX, [@@x_ptr]
+  MOV EDX, [@@y_ptr]
 
-  MOV EAX, BLOCK_SIZE
-  SHR EAX, 1
-  ADD [EBX], EAX
+  MOV EBX, BLOCK_SIZE
+  SHR EBX, 1
+
+  ADD [EAX], EBX
+  ADD [EDX], EBX
 
   RET
 ENDP centerPostion
@@ -249,10 +252,8 @@ PROC createPortal
 
   ;; Center position from player
   LEA EAX, [@@x0]
-  CALL centerPostion, EAX
-
-  LEA EAX, [@@y0]
-  CALL centerPostion, EAX
+  LEA EDX, [@@y0]
+  CALL centerPostion, EAX, EDX
 
   ;; Save laser direction
   MOV EAX, [@@direction]
@@ -464,7 +465,7 @@ PROC swapPortals
 ENDP swapPortals
 
 PROC physicsHandler
-  USES EAX, EBX
+  USES EAX, EBX, EDX
 
   MOV EAX, [player.vx]
   ADD EAX, [player.x]
