@@ -207,7 +207,10 @@ PROC drawLaser ; draw laser directly into image_buff
     SUB [@@x1], EAX
     SUB [@@y1], EDX 
 
+
     PUSH [@@number]
+    JMP @@check    ;check if they are already equal
+
     @@draw:
       ;; next draw position
       ADD [@@x0], EAX
@@ -223,6 +226,7 @@ PROC drawLaser ; draw laser directly into image_buff
 
       @@reset:
         PUSH TRUE
+
       ;; check if finished
       @@check:
         MOV EBX, [@@x0]
