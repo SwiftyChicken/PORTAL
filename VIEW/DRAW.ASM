@@ -107,8 +107,27 @@ PROC fillBuffer
   RET
 ENDP fillBuffer
 
+PROC clearImageBuffer
+  USES EAX, ECX, EDI
+
+  CLD
+  MOV EDI, OFFSET image_buff ; Frame buffer start address
+
+  MOV EAX, IMGBH
+  STOSW
+
+  MOV EAX, IMGBW
+  STOSW
+
+  XOR EAX, EAX
+  MOV ECX, IMAGE_BUFF_SIZE ; Amount of pixels on screen
+
+  REP STOSB
+  RET
+ENDP clearImageBuffer
+
 PROC draw
-  ARG @@image:DWORD, @@column:DWORD, @@row:DWORD
+  ARG @@image:DWORD, @@column:DWORD, @@row:DWORD, @@transparent:DWORD
   USES ESI, EDI
 
 	CALL loadFile, [@@image], OFFSET image_buff, IMAGE_BUFF_SIZE
@@ -118,7 +137,7 @@ PROC draw
   MOV ESI, OFFSET image_buff
   MOV EDI, OFFSET double_buff
 
-  CALL scaleBuff, [@@column], [@@row]
+  CALL scaleBuff, [@@column], [@@row], [@@transparent]
 
   RET
 ENDP draw
@@ -137,7 +156,7 @@ PROC drawLevel
 ENDP drawLevel
 
 PROC scaleBuff
-  ARG @@column:DWORD, @@row:DWORD
+  ARG @@column:DWORD, @@row:DWORD, @@transparent:DWORD
   USES ECX, EAX, EBX, EDX
 
   ; Calculate the drawing start position => EDI
@@ -159,7 +178,7 @@ PROC scaleBuff
     MOV ECX, SCALE  ; Inner Loop index (draw each line SCALE time)
 
     @@scale:
-      CALL drawLine, EAX ; pass line length (image width)
+      CALL drawLine, EAX, [@@transparent] ; pass line length (image width)
 
       ; Go one line down
       ADD EDI, SCRW 
@@ -179,15 +198,66 @@ PROC scaleBuff
     RET
 ENDP scaleBuff
 
-PROC drawLaser ; draw laser directly into double_buff
-  ARG @@x0:DWORD, @@y0:DWORD, @@direction:DWORD
-  USES EAX, EDX
-  CALL directionNext, [@@direction]  ; set up EAX (-> x) and EDX (-> y) to calculate next position
+PROC drawLaser ; draw laser directly into image_buff
+  ARG @@x0:DWORD, @@y0:DWORD, @@x1:DWORD, @@y1:DWORD, @@number:DWORD, @@direction:DWORD
+  USES EAX, EBX, ECX, EDX
+    CALL clearImageBuffer
+    CALL directionNext, [@@direction]  ; set up EAX (-> x) and EDX (-> y) to calculate next position
+    ;; Avoid portal location
+    SUB [@@x1], EAX
+    SUB [@@y1], EDX 
 
 
+    PUSH [@@number]
+    JMP @@check    ;check if they are already equal
 
-  RET
+    @@draw:
+      ;; next draw position
+      ADD [@@x0], EAX
+      ADD [@@y0], EDX
+      
+      ;; draw point
+      POP EBX
+      CMP EBX, TRUE
+      JNE @@reset
+        PUSH FALSE
+        CALL drawPoint, [@@x0], [@@y0]
+        JMP @@check
+
+      @@reset:
+        PUSH TRUE
+
+      ;; check if finished
+      @@check:
+        MOV EBX, [@@x0]
+        CMP EBX, [@@x1]
+        JNE @@draw
+          MOV EBX, [@@y0]
+          CMP EBX, [@@y1]
+          JNE @@draw
+
+    @@return:
+      POP EBX
+      CLD
+      ; Set up Index registers
+      MOV ESI, OFFSET image_buff
+      MOV EDI, OFFSET double_buff
+      CALL scaleBuff, 0, 0, TRUE
+
+      RET
 ENDP drawLaser
+
+PROC drawPoint
+  ARG @@x:DWORD, @@y:DWORD
+  USES EAX, EBX, EDX
+    MOV EAX, [@@y]
+    MOV EBX, IMGBW
+    MUL EBX
+    ADD EAX, [@@x]
+    MOV [image_buff + EAX + 4], LASER_COLOR
+
+    RET
+ENDP drawPoint
 
 PROC updateLevel
   ARG @@newLevel:DWORD
@@ -202,7 +272,7 @@ PROC updateLevel
   ; Set up Index registers
   MOV ESI, OFFSET image_buff
   MOV EDI, OFFSET level_buff
-  CALL scaleBuff, 0, 0
+  CALL scaleBuff, 0, 0, TRUE
 
   RET
 ENDP updateLevel
@@ -293,8 +363,8 @@ ENDP updateFrame
 ;;;;;;;;;;;;;;;;;;;;; AUXILIARY PROCS ;;;;;;;;;;;;;;;;;;;;;;;
 
 PROC drawLine ; Auxiliary proc for draw procedure
-  ARG @@length:DWORD
-  USES ESI, EAX, ECX ; ESI -> Reset ESI after proc, so line can be redrawn
+  ARG @@length:DWORD, @@transparent:DWORD
+  USES ESI, EAX, EBX, ECX ; ESI -> Reset ESI after proc, so line can be redrawn
 
   MOV ECX, [@@length]
 
@@ -302,10 +372,14 @@ PROC drawLine ; Auxiliary proc for draw procedure
     PUSH ECX
     MOV ECX, SCALE
     LODSB        ; Load next pixel
-    CMP AL, 00H
-    JE @@skip
-    REP STOSB    ; Draw pixel SCALE time
-    JMP @@next
+    MOV EBX, [@@transparent]
+    CMP EBX, FALSE
+    JE @@draw
+      CMP AL, 00H
+      JE @@skip
+    @@draw:
+      REP STOSB    ; Draw pixel SCALE time
+      JMP @@next
     @@skip:
       ADD EDI, ECX
     @@next:
@@ -439,19 +513,63 @@ DATASEG
 
   PRT_A PortalView <OFFSET PRT_A_H, OFFSET PRT_A_H, OFFSET PRT_A_V> 
 
-  PRT_A_H Animated <1, 0, OFFSET PRT_A_H_Images, OFFSET PRT_A_H_Images>
-	PRT_A_H_Images DB "VIEW/IMG/PRT_A_H.BIN", 0
+  PRT_A_H Animated <8, 0, OFFSET PRT_A_H_Images, OFFSET PRT_A_H_Images>
+	PRT_A_H_Images DB "VIEW/IMG/PRT_A/H_0.BIN", 0
+	               DB "VIEW/IMG/PRT_A/H_0.BIN", 0
+	               DB "VIEW/IMG/PRT_A/H_1.BIN", 0
+	               DB "VIEW/IMG/PRT_A/H_1.BIN", 0
+	               DB "VIEW/IMG/PRT_A/H_2.BIN", 0
+	               DB "VIEW/IMG/PRT_A/H_2.BIN", 0
+	               DB "VIEW/IMG/PRT_A/H_3.BIN", 0
+	               DB "VIEW/IMG/PRT_A/H_3.BIN", 0
 
-  PRT_A_V Animated <1, 0, OFFSET PRT_A_V_Images, OFFSET PRT_A_V_Images>
-	PRT_A_V_Images DB "VIEW/IMG/PRT_A_V.BIN", 0
+  PRT_A_V Animated <8, 0, OFFSET PRT_A_V_Images, OFFSET PRT_A_V_Images>
+	PRT_A_V_Images DB "VIEW/IMG/PRT_A/V_0.BIN", 0
+	               DB "VIEW/IMG/PRT_A/V_0.BIN", 0
+	               DB "VIEW/IMG/PRT_A/V_1.BIN", 0
+	               DB "VIEW/IMG/PRT_A/V_1.BIN", 0
+	               DB "VIEW/IMG/PRT_A/V_2.BIN", 0
+	               DB "VIEW/IMG/PRT_A/V_2.BIN", 0
+	               DB "VIEW/IMG/PRT_A/V_3.BIN", 0
+	               DB "VIEW/IMG/PRT_A/V_3.BIN", 0
 
   PRT_B PortalView <OFFSET PRT_B_H, OFFSET PRT_B_H, OFFSET PRT_B_V> 
 
-  PRT_B_H Animated <1, 0, OFFSET PRT_B_H_Images, OFFSET PRT_B_H_Images>
-	PRT_B_H_Images DB "VIEW/IMG/PRT_B_H.BIN", 0
+  PRT_B_H Animated <16, 0, OFFSET PRT_B_H_Images, OFFSET PRT_B_H_Images>
+	PRT_B_H_Images DB "VIEW/IMG/PRT_B/H_0.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_0.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_0.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_0.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_3.BIN", 0
 
-  PRT_B_V Animated <1, 0, OFFSET PRT_B_V_Images, OFFSET PRT_B_V_Images>
-	PRT_B_V_Images DB "VIEW/IMG/PRT_B_V.BIN", 0
+  PRT_B_V Animated <16, 0, OFFSET PRT_B_V_Images, OFFSET PRT_B_V_Images>
+	PRT_B_V_Images DB "VIEW/IMG/PRT_B/V_0.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_0.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_0.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_0.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_3.BIN", 0
 
   character_R Animated <6, 0, OFFSET character_R_Images, OFFSET character_R_Images>
 

@@ -26,6 +26,8 @@ BLOCK_BUFF_SIZE EQU BLOCK_LEN*BLOCK_LEN ; Size of a LEVEL.BIN block
 
 PRT_HORIZONTAL EQU 0
 PRT_VERTICAL EQU 1*4
+
+LASER_COLOR EQU 02H
 ;-----------------------------------------------------------
 ; STRUC
 ;-----------------------------------------------------------
@@ -47,6 +49,7 @@ GLOBAL updateVideoBuffer:PROC
 GLOBAL waitVBI:PROC
 GLOBAL fillBuffer:PROC
 GLOBAL draw:PROC
+GLOBAL drawLaser:PROC
 GLOBAL drawLevel:PROC
 GLOBAL updateLevel:PROC
 GLOBAL resetAnimated:PROC
