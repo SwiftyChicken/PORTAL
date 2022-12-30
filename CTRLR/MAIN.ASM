@@ -334,11 +334,11 @@ PROC main
     ;;DRAW -> PLAYER ANIMATION
     CMP [player.direction], RIGHT
     JE @@right
-      CALL draw, [character_L.image], [player.x], [player.y]
+      CALL draw, [character_L.image], [player.x], [player.y], TRUE
       JMP @@laser_animation
 
       @@right:
-        CALL draw, [character_R.image], [player.x], [player.y]
+        CALL draw, [character_R.image], [player.x], [player.y], TRUE
 
     ;;DRAW -> LASER ANIMATION
     @@laser_animation:
@@ -357,7 +357,7 @@ PROC main
           MOV EAX, [PRT_B.current]
           CALL getNextFrame, EAX
           CALL updateFrame, EAX
-          CALL draw, [EAX + Animated.image], [portal_B.x], [portal_B.y]
+          CALL draw, [EAX + Animated.image], [portal_B.x], [portal_B.y], FALSE
         POP EAX
 
       @@prt_a:
@@ -369,7 +369,7 @@ PROC main
             MOV EAX, [PRT_A.current]
             CALL getNextFrame, EAX
             CALL updateFrame, EAX
-            CALL draw, [EAX + Animated.image], [portal_A.x], [portal_A.y]
+            CALL draw, [EAX + Animated.image], [portal_A.x], [portal_A.y], FALSE
           POP EAX
 
       ;; GAME CHECKS & SCREEN UPDATES
