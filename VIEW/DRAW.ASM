@@ -536,40 +536,40 @@ DATASEG
   PRT_B PortalView <OFFSET PRT_B_H, OFFSET PRT_B_H, OFFSET PRT_B_V> 
 
   PRT_B_H Animated <16, 0, OFFSET PRT_B_H_Images, OFFSET PRT_B_H_Images>
-	PRT_B_H_Images DB "VIEW/IMG/PRT_B/H_0.BIN", 0
+	PRT_B_H_Images DB "VIEW/IMG/PRT_B/H_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_1.BIN", 0
 	               DB "VIEW/IMG/PRT_B/H_0.BIN", 0
 	               DB "VIEW/IMG/PRT_B/H_0.BIN", 0
 	               DB "VIEW/IMG/PRT_B/H_0.BIN", 0
-	               DB "VIEW/IMG/PRT_B/H_1.BIN", 0
-	               DB "VIEW/IMG/PRT_B/H_1.BIN", 0
-	               DB "VIEW/IMG/PRT_B/H_1.BIN", 0
-	               DB "VIEW/IMG/PRT_B/H_1.BIN", 0
-	               DB "VIEW/IMG/PRT_B/H_2.BIN", 0
-	               DB "VIEW/IMG/PRT_B/H_2.BIN", 0
-	               DB "VIEW/IMG/PRT_B/H_2.BIN", 0
-	               DB "VIEW/IMG/PRT_B/H_2.BIN", 0
-	               DB "VIEW/IMG/PRT_B/H_3.BIN", 0
-	               DB "VIEW/IMG/PRT_B/H_3.BIN", 0
-	               DB "VIEW/IMG/PRT_B/H_3.BIN", 0
-	               DB "VIEW/IMG/PRT_B/H_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/H_0.BIN", 0
 
   PRT_B_V Animated <16, 0, OFFSET PRT_B_V_Images, OFFSET PRT_B_V_Images>
-	PRT_B_V_Images DB "VIEW/IMG/PRT_B/V_0.BIN", 0
+	PRT_B_V_Images DB "VIEW/IMG/PRT_B/V_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_2.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_1.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_1.BIN", 0
 	               DB "VIEW/IMG/PRT_B/V_0.BIN", 0
 	               DB "VIEW/IMG/PRT_B/V_0.BIN", 0
 	               DB "VIEW/IMG/PRT_B/V_0.BIN", 0
-	               DB "VIEW/IMG/PRT_B/V_1.BIN", 0
-	               DB "VIEW/IMG/PRT_B/V_1.BIN", 0
-	               DB "VIEW/IMG/PRT_B/V_1.BIN", 0
-	               DB "VIEW/IMG/PRT_B/V_1.BIN", 0
-	               DB "VIEW/IMG/PRT_B/V_2.BIN", 0
-	               DB "VIEW/IMG/PRT_B/V_2.BIN", 0
-	               DB "VIEW/IMG/PRT_B/V_2.BIN", 0
-	               DB "VIEW/IMG/PRT_B/V_2.BIN", 0
-	               DB "VIEW/IMG/PRT_B/V_3.BIN", 0
-	               DB "VIEW/IMG/PRT_B/V_3.BIN", 0
-	               DB "VIEW/IMG/PRT_B/V_3.BIN", 0
-	               DB "VIEW/IMG/PRT_B/V_3.BIN", 0
+	               DB "VIEW/IMG/PRT_B/V_0.BIN", 0
 
   character_R Animated <6, 0, OFFSET character_R_Images, OFFSET character_R_Images>
 
