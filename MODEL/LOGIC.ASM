@@ -254,10 +254,24 @@ PROC createPortal
   LEA EAX, [@@y0]
   CALL centerPostion, EAX
 
+  ;; Save laser direction
+  MOV EAX, [@@direction]
+  MOV [laser.direction], EAX
+
   ;; Load the position increments of next position (x+ -> EAX) & (y+ -> EDX)
   CALL directionNext, [@@direction]  
   PUSH EAX  ; = x+
   PUSH EDX  ; = y+
+
+  ;; Save laser start point
+  MOV EBX, BLOCK_SIZE
+  SHR EBX, 1
+
+  IMUL EAX, EBX
+  MOV [laser.x0], EAX
+  
+  IMUL EDX, EBX
+  MOV [laser.y0], EDX
 
   ;; Find first Block on path
   @@findBlock:
@@ -282,6 +296,17 @@ PROC createPortal
     CALL checkCollision, [@@x0], [@@y0] ; check upper left for collision
     CMP DL, EMPTY
     JE @@findBlock
+  
+  ;; Save laser end point
+  MOV EAX, [@@x0]
+  MOV [laser.x1], EAX
+
+  MOV EAX, [@@y0]
+  MOV [laser.y1], EAX
+  
+  ;; Activate laser
+  MOV EAX, [laser.span]
+  MOV [laser.active], EAX
 
   ;; restore Stack
   POP EBX ; = y+
@@ -372,12 +397,11 @@ PROC createPortal
     JNE @@return
   
   @@create_portal:
-    CMP [nextPortal], PORTAL_A
+    CMP [portal_A.active], FALSE
     JE @@create_A
     JMP @@create_B
 
   @@create_A:
-    MOV [nextPortal], PORTAL_B
     MOV EAX, [@@x0]
     MOV [portal_A.x], EAX
     MOV EAX, [@@y0]
@@ -388,7 +412,6 @@ PROC createPortal
     RET
 
   @@create_B:
-    MOV [nextPortal], PORTAL_A
     MOV EAX, [@@x0]
     MOV [portal_B.x], EAX
     MOV EAX, [@@y0]
@@ -396,11 +419,24 @@ PROC createPortal
     MOV EAX, [@@direction]
     MOV [portal_B.direction], EAX
     MOV [portal_B.active], TRUE
+    CALL swapPortals
     RET
 
   @@return:
     RET
 ENDP createPortal
+
+PROC useLaser
+  USES EAX
+    MOV EAX, [laser.active]
+    CMP EAX, FALSE
+    JE @@return
+      DEC EAX
+      MOV [laser.active], EAX
+
+  @@return:
+    RET
+ENDP useLaser
 
 PROC swapPortals
   USES EAX, EDX
@@ -561,11 +597,11 @@ DATASEG
   portal_A  Portal  <0, 0, OFFSET portal_B, OFFSET clone_A, UP>
   portal_B  Portal  <0, 0, OFFSET portal_A, OFFSET clone_B, DOWN>
 
-  player  Player  <40, 20>
+  laser     Laser   <>
+
+  player    Player  <40, 20>
   clone_A   Player  <portal_A.x, portal_A.y>
   clone_B   Player  <portal_B.x, portal_B.y>
-
-  nextPortal DB PORTAL_A
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
