@@ -340,6 +340,8 @@ PROC main
       @@right:
         CALL draw, [character_R.image], [player.x], [player.y]
 
+    ;;DRAW -> LASER ANIMATION
+
     ;;DRAW -> PORTAL ANIMATION
     @@skip_right:
       CMP [portal_B.active], FALSE

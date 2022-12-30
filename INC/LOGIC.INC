@@ -31,19 +31,32 @@ STRUC Portal
   x dd ?
   y dd ?
   portal dd ?
-  clone dd ?
   direction dd ?
+  clone dd ?
   active dd FALSE
-  size dd BLOCK_SIZE
+  size dd PORTAL_SIZE
 ENDS Portal
+
+STRUC Laser
+  x0 dd ?
+  y0 dd ?
+  x1 dd ?
+  y1 dd ?
+  direction dd ?
+  span dd 5
+  active dd FALSE
+ENDS Laser
 
 GLOBAL physicsHandler:PROC
 GLOBAL loadLevel:PROC
 GLOBAL createPortal:PROC
+GLOBAL useLaser:PROC
 GLOBAL swapPortals:PROC
 
 GLOBAL portal_A:Portal
 GLOBAL portal_B:Portal
+
+GLOBAL laser:Laser
 
 GLOBAL player:Player
 GLOBAL clone_A:Player
