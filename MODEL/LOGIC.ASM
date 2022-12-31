@@ -36,8 +36,39 @@ ENDP centerPostion
 
 PROC tryFitHor
   ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD
-  USES EAX
+  USES EAX, EBX
+    ;; check if don't overlap with portal A
+    ;; (Portal B will despawn anyways)
+    CMP [portal_A.active], TRUE
+    JNE @@check_fit
 
+    ; New portal x end point
+    MOV EAX, [@@x]
+    ADD EAX, PORTAL_SIZE - 1
+
+    CMP [portal_A.direction], UP
+    JE @@horizontal_A
+    CMP [portal_A.direction], DOWN
+    JE @@horizontal_A
+     ;@@vertical_A:
+        MOV EBX, [portal_A.y]
+        ADD EBX, PORTAL_SIZE - 1
+
+        CALL checkIntersection, [@@x], [@@y], EAX, [@@y], [portal_A.x], [portal_A.y], [portal_A.x], EBX
+        CMP DL, TRUE
+        JE @@failed
+          JMP @@check_fit
+
+     @@horizontal_A:
+        MOV EBX, [portal_A.x]
+        ADD EBX, PORTAL_SIZE - 1
+
+        CALL checkIntersection, [@@x], [@@y], EAX, [@@y], [portal_A.x], [portal_A.y], EBX, [portal_A.y]
+        CMP DL, TRUE
+        JE @@failed
+          JMP @@check_fit
+
+    @@check_fit:
       ;; Check if start point in wall
       CALL checkCollision, [@@x], [@@y]
       CMP DL, WALL
@@ -81,8 +112,39 @@ ENDP tryFitHor
 
 PROC tryFitVert
   ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD
-  USES EAX
+  USES EAX, EBX
+    ;; check if don't overlap with portal A
+    ;; (Portal B will despawn anyways)
+    CMP [portal_A.active], TRUE
+    JNE @@check_fit
 
+    ; New portal y end point
+    MOV EAX, [@@y]
+    ADD EAX, PORTAL_SIZE - 1
+
+    CMP [portal_A.direction], UP
+    JE @@horizontal_A
+    CMP [portal_A.direction], DOWN
+    JE @@horizontal_A
+     ;@@vertical_A:
+        MOV EBX, [portal_A.y]
+        ADD EBX, PORTAL_SIZE - 1
+
+        CALL checkIntersection, [@@x], [@@y], [@@x], EAX, [portal_A.x], [portal_A.y], [portal_A.x], EBX
+        CMP DL, TRUE
+        JE @@failed
+          JMP @@check_fit
+
+     @@horizontal_A:
+        MOV EBX, [portal_A.x]
+        ADD EBX, PORTAL_SIZE - 1
+
+        CALL checkIntersection, [@@x], [@@y], [@@x], EAX, [portal_A.x], [portal_A.y], EBX, [portal_A.y]
+        CMP DL, TRUE
+        JE @@failed
+          JMP @@check_fit
+
+    @@check_fit:
       ;; Check if start point in wall
       CALL checkCollision, [@@x], [@@y]
       CMP DL, WALL
@@ -116,8 +178,8 @@ PROC tryFitVert
       CMP DL, EMPTY
       JNE @@failed
 
-      MOV DL, TRUE
-      RET
+    MOV DL, TRUE
+    RET
 
     @@failed:
       MOV DL, FALSE
@@ -135,13 +197,10 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
   MOV [@@x_inc], EAX
   MOV [@@y_inc], EDX
   
-  CMP [@@direction], UP
-  JE @@horizontally
-  CMP [@@direction], DOWN
-  JE @@horizontally
-  JMP @@vertically
-
-  @@horizontally:
+  CMP [@@direction], LEFT
+  JE @@vertical
+  CMP [@@direction], RIGHT
+  JE @@vertical
     ;; Try to fit portal from [x-half_size => x]
     MOV ECX, PORTAL_SIZE
     SHR ECX, 1
@@ -174,7 +233,7 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
       MOV EAX, [@@x0_ptr]
       MOV EAX, [EAX]
       SUB EAX, PORTAL_SIZE
-      ADD EAX, ECX          ; x - <block_size -> half_block_size>
+      ADD EAX, ECX          ; x + <block_size -> half_block_size>
 
       PUSH EDX
       CALL tryFitHor, EAX, EDX, [@@x_inc], [@@y_inc]
@@ -186,15 +245,15 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
         JGE @@hor_try_2
     JMP @@failed
 
-  @@vertically:
-    ;; Try portal from [y + half_size => x]
+  @@vertical:
+    ;; Try portal from [y - half_size => x]
     MOV ECX, PORTAL_SIZE
     SHR ECX, 1
 
     @@vert_try_1:
       MOV EDX, [@@y0_ptr]
       MOV EDX, [EDX]
-      SUB EDX, ECX          ; y + <half_block_size>
+      SUB EDX, ECX          ; y - <half_block_size>
 
       MOV EAX, [@@x0_ptr]
       MOV EAX, [EAX]
@@ -250,7 +309,7 @@ PROC createPortal
   ARG @@x0, @@y0, @@direction:DWORD
   USES EAX, EBX, EDX
 
-  ;; Center position from player
+ ;; Center position from player
   LEA EAX, [@@x0]
   LEA EDX, [@@y0]
   CALL centerPostion, EAX, EDX
@@ -350,7 +409,7 @@ PROC createPortal
     CMP [@@direction], DOWN_RIGHT
     JNE @@check_down_left
       ; Check Block under it
-      MOV EBX, POS_UP ; y+ := POS_UP -> POS_DOWN
+      MOV EBX, POS_UP   ; y+ := POS_UP -> POS_DOWN
       ADD EBX, [@@y0]   ; y of block under
       ADD EAX, [@@x0]   ; x of block under
       CALL checkCollision, EAX, EBX 
@@ -362,7 +421,7 @@ PROC createPortal
     CMP [@@direction], DOWN_LEFT
     JNE @@not_slanting
       ; Check Block under it
-      MOV EBX, POS_UP ; y+ := POS_UP -> POS_DOWN
+      MOV EBX, POS_UP   ; y+ := POS_UP -> POS_DOWN
       ADD EBX, [@@y0]   ; y of block under
       ADD EAX, [@@x0]   ; x of block under
       CALL checkCollision, EAX, EBX 
@@ -395,7 +454,7 @@ PROC createPortal
   @@try_placing:
     LEA EAX, [@@x0]
     LEA EDX, [@@y0]
-    CALL tryFitPortal, EAX, EDX, [@@direction]
+    CALL tryFitPortal, EAX, EDX, [@@direction], 0, 0
     CMP DL, TRUE     ; Did the function succeed?
     JNE @@return
   
@@ -766,48 +825,97 @@ PROC checkCollision
 ENDP checkCollision 
 
 ;; check if the lines A and B are intersecting
-;; A -> player (catch teleportation) or portal (catch overlap)
+;; A -> player (catch teleportation only if perpendicular movement)
+;;   -> portal (catch overlap)
 ;; B -> portal
+;; Note: the lines are ALWAYS horizontal or vertical
 PROC checkIntersection
   ARG @@A_x0:DWORD, @@A_y0:DWORD, @@A_x1:DWORD, @@A_y1:DWORD, @@B_x0:DWORD, @@B_y0:DWORD, @@B_x1:DWORD, @@B_y1:DWORD
   USES EAX, EBX
-  ;; HERE SHOULD COME SOME MADMAN CALCULATIONS DX
-  ;; Slope of line A
-  ; y1 - y0
-  MOV EAX, [@@A_y1]
-  SUB EAX, [@@A_y0]
+  ;; Check if A is horizontal -> EAX
+  MOV EAX, [@@A_y0]
+  CMP EAX, [@@A_y1]
+  JE @@A_horizontal
+    MOV EAX, FALSE
+    JMP @@check_horizontal_B
+  @@A_horizontal:
+    MOV EAX, TRUE
 
-  ; x1 - x0
-  MOV EBX, [@@A_x1]
-  SUB EBX, [@@A_x0]
+  ;; Check if B is horizontal -> EBX
+  @@check_horizontal_B:
+    MOV EBX, [@@B_y0]
+    CMP EBX, [@@B_y1]
+    JE @@B_horizontal
+      MOV EBX, FALSE
+      JMP @@check_type_intersection
+    @@B_horizontal:
+      MOV EBX, TRUE
 
-  ; slope_A = (y1 - y0)/(x1 - x0)
-  MOV EDX, [0]
-  IDIV EBX
+  ;; Check if they have same orientation
+  @@check_type_intersection:
+    CMP EAX, EBX
+    JNE @@checkPerpendicular
+    ;; Check if they share points 
+        CMP EAX, TRUE
+        JE @@checkParallelHorizontal
+       ;@@checkParallelVertical:
+          MOV EAX, [@@A_x0]
+          CMP EAX, [@@B_x0]
+          JNE @@no_intersection               ; check if they are on the same x
 
-  PUSH EAX ; save slope_A on stack
+          MOV EAX, [@@A_y0]
+          CMP EAX, [@@B_y0]
+          JL @@par_vert_situation1
+          JMP @@par_vert_situation2
 
-  ;; Slope of line B
-  ; y1 - y0
-  MOV EAX, [@@B_y1]
-  SUB EAX, [@@B_y0]
+          @@par_vert_situation1:              ; Situation 1: A_y0<=B_y0<=A_y1<=B_y1
+            MOV EAX, [@@B_y0]
+            DEC EAX
+            CMP EAX, [@@A_y1]     
+            JLE @@intersection
+            JMP @@no_intersection
+            
+          @@par_vert_situation2:              ; Situation 2: B_y0<=A_y0<=B_y1<=A_y1
+            MOV EAX, [@@A_y0]
+            DEC EAX
+            CMP EAX, [@@B_y1]                   
+            JLE @@intersection
+            JMP @@no_intersection
 
-  ; x1 - x0
-  MOV EBX, [@@B_x1]
-  SUB EBX, [@@B_x0]
+        @@checkParallelHorizontal:
+          MOV EAX, [@@A_y0]
+          CMP EAX, [@@B_y0]
+          JNE @@no_intersection               ; check if they are on the same y
 
-  ; slope_B = (y1 - y0)/(x1 - x0)
-  MOV EDX, [0]
-  IDIV EBX
+          MOV EAX, [@@A_x0]
+          CMP EAX, [@@B_x0]
+          JLE @@par_hor_situation1
+          JMP @@par_hor_situation2
 
-  POP EBX             ; slope_A
-  CMP EAX, EBX        ; If slopes are equal they are parallel
-  JE @@check_parallel
+          @@par_hor_situation1:              ; Situation 1: A_x0<=B_x0<=A_x1<=B_x1
+            MOV EAX, [@@B_x0]
+            DEC EAX
+            CMP EAX, [@@A_x1]     
+            JLE @@intersection
+            JMP @@no_intersection
+            
+          @@par_hor_situation2:              ; Situation 2: B_x0<=A_x0<=B_x1<=A_x1
+            MOV EAX, [@@A_x0]
+            DEC EAX
+            CMP EAX, [@@B_x1]                   
+            JLE @@intersection
+            JMP @@no_intersection
 
-  @@check_parallel:
-  @@not_found:
-    MOV EDX, FALSE
-      RET
+      @@checkPerpendicular:
+        JMP @@no_intersection
+
+  @@intersection:
+    MOV DL, TRUE
+    RET
+
+  @@no_intersection:
+    MOV DL, FALSE
+    RET
 ENDP checkIntersection
 
 PROC loadLevel
