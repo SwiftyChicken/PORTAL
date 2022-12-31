@@ -23,7 +23,7 @@ x86 assembly remake of Portal Prelude on the TI-84
 - [X] Animated ~~monochrome~~ colored portals
     - Make ~~monochrome~~ colored portal animations
 
-- [ ] LOGIC.ASM: don't draw portals over each other
+- [X] LOGIC.ASM: don't draw portals over each other
     - Check TI 84 behaviour
     
 - [ ] LOGIC.ASM: Teleportation logic
