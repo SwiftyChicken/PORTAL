@@ -527,7 +527,7 @@ PROC physicsHandler
       JMP @@try_move_y
 
   @@dont_move_y:
-    MOV [player.vy], 0
+    MOV [player.vy], 1
     MOV [player.jumping], FALSE
 
   @@return:

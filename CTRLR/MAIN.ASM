@@ -78,7 +78,7 @@ PROC pressHandler
         CALL resetAnimated, OFFSET character_L
         CALL resetAnimated, OFFSET character_R
         
-        CMP [player.vy], 0
+        CMP [player.vy], 1
         JNE @@return
           MOV [player.vy], -3
           RET
