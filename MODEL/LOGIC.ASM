@@ -500,12 +500,12 @@ PROC physicsHandler
     JNE @@slow_down_y
       @@move_y:
         MOV [player.y], EAX
-        CMP [gravity_inc], TRUE
+        CMP [gravity_inc], TRUE   ; Should gravity be applied? (1/2 of the time)
           MOV [gravity_inc], TRUE
         JNE @@return
           MOV [gravity_inc], FALSE
           CMP [player.vy], MAX_VELOCITY
-          JG @@return
+          JGE @@return
             INC [player.vy]
             RET
   @@slow_down_y:
@@ -528,6 +528,7 @@ PROC physicsHandler
 
   @@dont_move_y:
     MOV [player.vy], 1
+    MOV [gravity_inc], FALSE ; reset gravity_inc
     MOV [player.jumping], FALSE
 
   @@return:
@@ -619,6 +620,13 @@ ENDP checkPortalCollision
 PROC checkInsidePortal
   ARG @@x:DWORD, @@y:DWORD
   USES EAX, EBX
+
+  ;; Can't go inside portal if they aren't both active
+  CMP [portal_A.active], TRUE
+  JNE @@outside
+  CMP [portal_B.active], TRUE
+  JNE @@outside
+
     LEA EAX, [@@x]
     LEA EBX, [@@y]
     CALL centerPostion, EAX, EBX ; use player core position
@@ -635,8 +643,9 @@ PROC checkInsidePortal
     CMP DL, TRUE
     JE @@inside
 
-  MOV DL, FALSE
-  RET
+  @@outside:
+    MOV DL, FALSE
+    RET
 
   @@inside:
     MOV DL, TRUE
@@ -820,7 +829,7 @@ DATASEG
   clone_A   Player  <portal_A.x, portal_A.y>
   clone_B   Player  <portal_B.x, portal_B.y>
 
-  gravity_inc DB TRUE
+  gravity_inc DB FALSE ; Simulate gravity of 0.5
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
