@@ -443,6 +443,12 @@ ENDP useLaser
 
 PROC swapPortals
   USES EAX, EDX
+
+  CMP [portal_A.active], TRUE
+  JNE @@return
+  CMP [portal_B.active], TRUE
+  JNE @@return
+
   MOV EAX, [portal_A.x]
   MOV EDX, [portal_A.y]
 
@@ -461,7 +467,8 @@ PROC swapPortals
   MOV [portal_A.direction], EDX
   MOV [portal_B.direction], EAX
 
-  RET
+  @@return:
+    RET
 ENDP swapPortals
 
 PROC physicsHandler
@@ -470,30 +477,36 @@ PROC physicsHandler
   MOV EAX, [player.vx]
   ADD EAX, [player.x]
 
-  CALL checkBlockCollision, EAX, [player.y]
+  CALL checkPlayerCollision, EAX, [player.y]
+  CMP DL, PORTAL
+  JE @@move_x
   CMP DL, EMPTY
   JNE @@dont_move_x
-    MOV [player.x], EAX
-  @@dont_move_x:
-    MOV [player.vx], 0
+    @@move_x:
+      MOV [player.x], EAX
+    @@dont_move_x:
+      MOV [player.vx], 0
   
-  @@move_y:
+  @@try_move_y:
     MOV EAX, [player.vy]
     SAR EAX, SLOW_DOWN      ; Slown down vertical movement
     ADD EAX, [player.y]
 
-    CALL checkBlockCollision, [player.x], EAX
+    CALL checkPlayerCollision, [player.x], EAX
+    CMP DL, PORTAL
+    JE @@move_y
     CMP DL, EMPTY
     JNE @@slow_down_y
-      MOV [player.y], EAX
-      CMP [gravity_inc], TRUE
-        MOV [gravity_inc], TRUE
-      JNE @@return
-        MOV [gravity_inc], FALSE
-        CMP [player.vy], MAX_VELOCITY
-        JG @@return
-          INC [player.vy]
-          RET
+      @@move_y:
+        MOV [player.y], EAX
+        CMP [gravity_inc], TRUE
+          MOV [gravity_inc], TRUE
+        JNE @@return
+          MOV [gravity_inc], FALSE
+          CMP [player.vy], MAX_VELOCITY
+          JG @@return
+            INC [player.vy]
+            RET
   @@slow_down_y:
     CMP [player.vy], 0
     JL @@slow_up
@@ -502,7 +515,7 @@ PROC physicsHandler
     
     @@slow_up:
       INC [player.vy]
-      JMP @@move_y
+      JMP @@try_move_y
 
     @@slow_down:
       DEC [player.vy]
@@ -510,7 +523,7 @@ PROC physicsHandler
       SAR EAX, SLOW_DOWN
       CMP EAX, 0  ;IF y velocity 0 it has hit the ground
       JE @@dont_move_y
-      JMP @@move_y
+      JMP @@try_move_y
 
   @@dont_move_y:
     MOV [player.vy], 0
@@ -521,53 +534,177 @@ PROC physicsHandler
 ENDP physicsHandler
 
 ; AABB collision
-PROC checkBlockCollision
-	ARG @@x0:DWORD, @@y0:DWORD
+PROC checkPlayerCollision
+	ARG @@x:DWORD, @@y:DWORD
 	USES EAX, EBX
 
-	MOV EAX, [@@x0]
-	ADD EAX, BLOCK_SIZE - 1
-	MOV EBX, [@@y0]
-	ADD EBX, BLOCK_SIZE - 1
+  CMP [portal_A.active], TRUE
+  JNE @@block_collision
+  CMP [portal_B.active], TRUE
+  JNE @@block_collision
 
-  CALL checkCollision, [@@x0], [@@y0] ; check upper left for collision
+  CALL checkPortalCollision, [@@x], [@@y]
   CMP DL, EMPTY
   JNE @return
 
-  CALL checkCollision, EAX, [@@y0]		; check upper right for collision
-  CMP DL, EMPTY
-  JNE @return
+  @@block_collision:
+	  MOV EAX, [@@x]
+	  ADD EAX, BLOCK_SIZE - 1
+	  MOV EBX, [@@y]
+	  ADD EBX, BLOCK_SIZE - 1
 
-  CALL checkCollision, [@@x0], EBX		; check lower left for collision
-  CMP DL, EMPTY
-  JNE @return
+    CALL checkCollision, [@@x], [@@y] ; check upper left for collision
+    CMP DL, EMPTY
+    JNE @return
 
-  CALL checkCollision, EAX, EBX				; check lower right for collision
+    CALL checkCollision, EAX, [@@y]		; check upper right for collision
+    CMP DL, EMPTY
+    JNE @return
+
+    CALL checkCollision, [@@x], EBX		; check lower left for collision
+    CMP DL, EMPTY
+    JNE @return
+
+    CALL checkCollision, EAX, EBX				; check lower right for collision
 
   @return:
     RET
-ENDP checkBlockCollision
+ENDP checkPlayerCollision
+
+PROC checkPortalCollision
+  ARG @@x:DWORD, @@y:DWORD
+  USES EAX, EBX, ECX
+
+  MOV DL, EMPTY     ; Start with no collision
+  LEA EAX, [@@x]
+  LEA EBX, [@@y]
+  CALL centerPostion, EAX, EBX ; use player core
+
+  PUSH OFFSET portal_A
+  PUSH OFFSET portal_B
+  MOV ECX, 2
+
+  @@check:          ; Check both portal in stack
+    POP EBX                               ; EBX will hold portal ref
+    CMP DL, EMPTY                         ; Check if collision is found
+    JNE @@next                            ; Make sure to restore stack
+
+    CMP [EBX + Portal.active], TRUE       ; No point in checking inactive portal
+    JNE @@next
+
+    PUSH EDX
+      MOV EAX, [EBX + Portal.direction]
+      CALL opositeDirection, EAX        ; direction in wich core is approaching
+      MOV EAX, EDX
+
+      CALL directionNext, EAX         ; EAX -> x+ EDX -> y+
+      CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, EBX
+      CMP DL, TRUE
+      JE @@collision
+      JMP @@no_collision
+
+    @@collision:
+      MOV DL, PORTAL  ; Collision with portal has been made
+      JMP @@next
+
+    @@no_collision:
+      POP EDX
+    @@next:
+      LOOP @@check
+
+  RET
+ENDP checkPortalCollision
+
+PROC checkApproachingPortal
+  ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD, @@portal_ptr:DWORD
+  USES EAX, EBX, ECX
+  
+  MOV EBX, [@@portal_ptr]   ; EBX will hold portal ref
+  MOV EAX, [@@x_inc]
+  CMP EAX, 0                ; If x+ is 0 => horizontal
+  JE @@horizontal
+   ;@@vertical:
+      ;; check if y is in effective area
+      MOV EAX, BLOCK_SIZE/2       ; EAX will not be used because it's 0
+      ADD EAX, [EBX + Portal.y]   ; Calculate start effective area
+
+      CMP EAX, [@@y]
+      JG @@not_approaching
+
+      MOV EAX, [EBX + Portal.size]; EAX will not be used because it's 0
+      SUB EAX, BLOCK_SIZE/2
+      ADD EAX, [EBX + Portal.y]   ; Calculate end effective area
+
+      CMP EAX, [@@y]
+      JLE @@not_approaching
+
+      ;; check if x approach effective area with in half_block_size
+      MOV ECX, BLOCK_SIZE/2
+      @@approach_x:
+        MOV EAX, [@@x_inc]
+        ADD [@@x], EAX
+        MOV EAX, [EBX + Portal.x]
+        CMP EAX, [@@x]
+        JE @@approaching
+        LOOP @@approach_x
+      JMP @@not_approaching
+
+    @@horizontal:
+      ;; check if x is in effective area
+      MOV EAX, BLOCK_SIZE/2       ; EAX will not be used because it's 0
+      ADD EAX, [EBX + Portal.x]   ; Calculate start effective area
+
+      CMP EAX, [@@x]
+      JG @@not_approaching
+
+      MOV EAX, [EBX + Portal.size]; EAX will not be used because it's 0
+      SUB EAX, BLOCK_SIZE/2
+      ADD EAX, [EBX + Portal.x]   ; Calculate end effective area
+
+      CMP EAX, [@@x]
+      JLE @@not_approaching
+
+      ;; check if y approach effective area with in half_block_size
+      MOV ECX, BLOCK_SIZE/2
+      INC ECX
+      @@approach_y:
+        MOV EAX, [@@y_inc]
+        ADD [@@y], EAX
+        MOV EAX, [EBX + Portal.y]
+        CMP EAX, [@@y]
+        JE @@approaching
+        LOOP @@approach_y
+      JMP @@not_approaching
+         
+  @@not_approaching:
+    MOV DL, FALSE
+    RET
+
+  @@approaching:
+    MOV DL, TRUE
+    RET
+ENDP checkApproachingPortal
 
 ; Checks level and list of portals
 PROC checkCollision 
-	ARG @@x0:DWORD, @@y0:DWORD
+	ARG @@x:DWORD, @@y:DWORD
 	USES EAX, EBX
 
   ;; Check for out of bound
-  CMP [@@x0], START_BOUNDRY
+  CMP [@@x], START_BOUNDRY
   JL @@outOfBound
 
-  CMP [@@x0], WIDTH_BOUNDRY
+  CMP [@@x], WIDTH_BOUNDRY
   JG @@outOfBound
 
-  CMP [@@y0], START_BOUNDRY
+  CMP [@@y], START_BOUNDRY
   JL @@outOfBound
 
-  CMP [@@y0], HEIGHT_BOUNDRY
+  CMP [@@y], HEIGHT_BOUNDRY
   JG @@outOfBound
 
   ; CONVERT Y: 80x50 -> 16x10
-	MOV EAX, [@@y0]
+	MOV EAX, [@@y]
 	MOV EBX, BLOCK_SIZE
   XOR EDX, EDX          ;Clear EDX
 	DIV EBX
@@ -575,7 +712,7 @@ PROC checkCollision
 	PUSH EAX
 
   ;; CONVERT X in EAX: 80x50 -> 16x10
-	MOV EAX, [@@x0]
+	MOV EAX, [@@x]
 	MOV EBX, BLOCK_SIZE
   XOR EDX, EDX          ;Clear EDX
 	DIV EBX
@@ -592,6 +729,8 @@ PROC checkCollision
 ENDP checkCollision 
 
 ;; check if the lines A and B are intersecting
+;; A -> player (catch teleportation) or portal (catch overlap)
+;; B -> portal
 PROC checkIntersection
   ARG @@A_x0:DWORD, @@A_y0:DWORD, @@A_x1:DWORD, @@A_y1:DWORD, @@B_x0:DWORD, @@B_y0:DWORD, @@B_x1:DWORD, @@B_y1:DWORD
   USES EAX, EBX
@@ -624,8 +763,11 @@ PROC checkIntersection
   MOV EDX, [0]
   IDIV EBX
 
-  PUSH EAX ; save slope_B on stack
+  POP EBX             ; slope_A
+  CMP EAX, EBX        ; If slopes are equal they are parallel
+  JE @@check_parallel
 
+  @@check_parallel:
   @@not_found:
     MOV EDX, FALSE
       RET
