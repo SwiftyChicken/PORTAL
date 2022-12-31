@@ -480,6 +480,7 @@ PROC physicsHandler
   CALL checkPlayerCollision, EAX, [player.y]
   CMP DL, PORTAL
   JE @@move_x
+
   CMP DL, EMPTY
   JNE @@dont_move_x
     @@move_x:
@@ -578,7 +579,7 @@ PROC checkPortalCollision
   MOV DL, EMPTY     ; Start with no collision
   LEA EAX, [@@x]
   LEA EBX, [@@y]
-  CALL centerPostion, EAX, EBX ; use player core
+  CALL centerPostion, EAX, EBX ; use player core position
 
   PUSH OFFSET portal_A
   PUSH OFFSET portal_B
@@ -614,6 +615,33 @@ PROC checkPortalCollision
 
   RET
 ENDP checkPortalCollision
+
+PROC checkInsidePortal
+  ARG @@x:DWORD, @@y:DWORD
+  USES EAX, EBX
+    LEA EAX, [@@x]
+    LEA EBX, [@@y]
+    CALL centerPostion, EAX, EBX ; use player core position
+     
+    CALL opositeDirection, [portal_A.direction]
+    CALL directionNext, EDX
+    CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, OFFSET portal_A
+    CMP DL, TRUE
+    JE @@inside
+
+    CALL opositeDirection, [portal_B.direction]
+    CALL directionNext, EDX
+    CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, OFFSET portal_B
+    CMP DL, TRUE
+    JE @@inside
+
+  MOV DL, FALSE
+  RET
+
+  @@inside:
+    MOV DL, TRUE
+    RET
+ENDP checkInsidePortal
 
 PROC checkApproachingPortal
   ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD, @@portal_ptr:DWORD

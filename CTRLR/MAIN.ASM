@@ -85,11 +85,18 @@ PROC pressHandler
 
   @@check_n:
 	  CMP	AL, N_KEY
-    JNE @@check_s
+    JNE @@check_gun
       CMP [N_released], FALSE
       JE @@return
         MOV [N_released], FALSE
         CALL nextLevel
+      RET
+
+  ;; PORTAL GUN CONTROLS
+  @@check_gun:
+    CALL checkInsidePortal, [player.x], [player.y]
+    CMP DL, TRUE
+    JNE @@check_s
       RET
 
   @@check_s:
@@ -197,13 +204,13 @@ PROC releaseHandler
       MOV [N_released], TRUE
       RET
 
+  ;; PORTAL GUN CONTROLS
   @@check_s:
 	  CMP	AL, S_KEY
     JNE @@check_z
       MOV [S_released], TRUE
       RET
 
-  ;; Shooting Keys
   @@check_z:
 	  CMP	AL, Z_KEY
     JNE @@check_e

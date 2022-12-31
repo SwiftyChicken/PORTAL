@@ -55,6 +55,7 @@ GLOBAL loadLevel:PROC
 GLOBAL createPortal:PROC
 GLOBAL useLaser:PROC
 GLOBAL swapPortals:PROC
+GLOBAL checkInsidePortal:PROC
 
 GLOBAL portal_A:Portal
 GLOBAL portal_B:Portal
