@@ -345,12 +345,12 @@ PROC main
 
       CMP [portal_A.active], TRUE
       JNE @@draw_clone_B_L
-        CALL draw, [character_L.image], [clone_A.x], [clone_A.y], FALSE
+        CALL draw, [character_L.image], [clone_A.x], [clone_A.y], TRUE
 
       @@draw_clone_B_L:
         CMP [portal_B.active], TRUE
         JNE @@laser_animation
-          CALL draw, [character_L.image], [clone_B.x], [clone_B.y], FALSE
+          CALL draw, [character_L.image], [clone_B.x], [clone_B.y], TRUE
 
       JMP @@laser_animation
 
@@ -359,12 +359,12 @@ PROC main
 
         CMP [portal_A.active], TRUE
         JNE @@draw_clone_B_R
-          CALL draw, [character_R.image], [clone_A.x], [clone_A.y], FALSE
+          CALL draw, [character_R.image], [clone_A.x], [clone_A.y], TRUE
 
         @@draw_clone_B_R:
           CMP [portal_B.active], TRUE
           JNE @@laser_animation
-            CALL draw, [character_R.image], [clone_B.x], [clone_B.y], FALSE
+            CALL draw, [character_R.image], [clone_B.x], [clone_B.y], TRUE
 
     ;;DRAW -> LASER ANIMATION
     @@laser_animation:

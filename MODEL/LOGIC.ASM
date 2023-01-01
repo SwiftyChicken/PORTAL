@@ -301,7 +301,7 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
 ENDP tryFitPortal
 
 PROC createPortal
-  ARG @@x0, @@y0, @@direction:DWORD
+  ARG @@x0:DWORD, @@y0:DWORD, @@direction:DWORD
   USES EAX, EBX, EDX
 
  ;; Center position from player
@@ -466,7 +466,6 @@ PROC createPortal
     MOV EAX, [@@direction]
     MOV [portal_A.direction], EAX
     MOV [portal_A.active], TRUE
-    CALL updateClone, OFFSET portal_A
     RET
 
   @@create_B:
@@ -477,8 +476,8 @@ PROC createPortal
     MOV EAX, [@@direction]
     MOV [portal_B.direction], EAX
     MOV [portal_B.active], TRUE
-    CALL updateClone, OFFSET portal_B
     CALL swapPortals
+    CALL updateClones, FALSE, FALSE, FALSE, FALSE, FALSE
     RET
 
   @@return:
@@ -563,7 +562,7 @@ PROC physicsHandler
           CMP [player.vy], MAX_VELOCITY
           JGE @@return
             INC [player.vy]
-            RET
+            JMP @@return
   @@slow_down_y:
     CMP [player.vy], 0
     JL @@slow_up
@@ -588,6 +587,7 @@ PROC physicsHandler
     MOV [player.jumping], FALSE
 
   @@return:
+    CALL updateClones, FALSE, FALSE, FALSE, FALSE, FALSE
     RET
 ENDP physicsHandler
 
@@ -657,8 +657,8 @@ PROC checkPortalCollision
 
       CALL directionNext, EAX         ; EAX -> x+ EDX -> y+
       CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, EBX
-      CMP DL, TRUE
-      JE @@collision
+      CMP EDX, FALSE
+      JNE @@collision
       JMP @@no_collision
 
     @@collision:
@@ -672,12 +672,6 @@ PROC checkPortalCollision
 
   RET
 ENDP checkPortalCollision
-
-PROC updateClone
-  ARG portal_ptr:DWORD
-    
-  RET
-ENDP updateClone
 
 PROC checkInsidePortal
   ARG @@x:DWORD, @@y:DWORD
@@ -696,14 +690,14 @@ PROC checkInsidePortal
     CALL opositeDirection, [portal_A.direction]
     CALL directionNext, EDX
     CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, OFFSET portal_A
-    CMP DL, TRUE
-    JE @@inside
+    CMP EDX, FALSE
+    JNE @@inside
 
     CALL opositeDirection, [portal_B.direction]
     CALL directionNext, EDX
     CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, OFFSET portal_B
-    CMP DL, TRUE
-    JE @@inside
+    CMP EDX, FALSE
+    JNE @@inside
 
   @@outside:
     MOV DL, FALSE
@@ -714,6 +708,9 @@ PROC checkInsidePortal
     RET
 ENDP checkInsidePortal
 
+;; If Block center is entering the portal
+;; -> RETURN: With how much pixel the block is entering in EDX
+;; -> ELSE RETURN: FALSE
 PROC checkApproachingPortal
   ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD, @@portal_ptr:DWORD
   USES EAX, EBX, ECX
@@ -765,7 +762,6 @@ PROC checkApproachingPortal
 
       ;; check if y approach effective area with in half_block_size
       MOV ECX, BLOCK_SIZE/2
-      INC ECX
       @@approach_y:
         MOV EAX, [@@y_inc]
         ADD [@@y], EAX
@@ -776,15 +772,131 @@ PROC checkApproachingPortal
       JMP @@not_approaching
          
   @@not_approaching:
-    MOV DL, FALSE
+    MOV EDX, FALSE
     RET
 
   @@approaching:
-    MOV DL, TRUE
+    ;; return how much is inside the Portal
+    MOV EDX, ECX
     RET
 ENDP checkApproachingPortal
 
-; Checks level and list of portals
+PROC updateClones
+  ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD, @@clone_ptr:DWORD, @@portal_ptr:DWORD ; => LOCAL VARIABLES (NOT PARAMETERS)
+  USES EAX, EBX, ECX, EDX
+
+  ;; Can't go inside portal if they aren't both active
+  CMP [portal_A.active], TRUE
+  JNE @@return
+  CMP [portal_B.active], TRUE
+  JNE @@return
+
+  MOV EAX, [player.x]
+  MOV [@@x], EAX
+  LEA EAX, [@@x]
+
+  MOV EBX, [player.y]
+  MOV [@@y], EBX
+  LEA EBX, [@@y]
+
+  CALL centerPostion, EAX, EBX
+
+  PUSH OFFSET clone_A
+  PUSH OFFSET portal_A
+
+  PUSH OFFSET clone_B
+  PUSH OFFSET portal_B
+  
+  MOV ECX, 2      ; Clones to check
+
+  @@update:
+    POP [@@portal_ptr] ; Portal -> STRUC Portal
+    POP [@@clone_ptr] ; Clone  -> STRUC Player
+
+    ;; Get how much the player is in the other portal
+    MOV EBX, [@@portal_ptr]
+    MOV EBX, [EBX + Portal.portal]                    ; Get other portal pointer
+    CALL opositeDirection, [EBX + Portal.direction]   ; exit direction -> entre direction (:= EDX)
+    CALL directionNext, EDX
+    MOV [@@x_inc], EAX
+    MOV [@@y_inc], EDX
+
+    CALL checkApproachingPortal, [@@x], [@@y], [@@x_inc], [@@y_inc], EBX
+
+    ;; Place Clone based on how far in the player is into the portal
+    CALL updateClonePosition, [@@clone_ptr], [@@portal_ptr], EDX
+
+    @@continue:
+      LOOP @@update
+
+  @@return:
+    RET
+ENDP updateClones
+
+PROC updateClonePosition
+  ARG @@clone_ptr:DWORD, @@portal_ptr:DWORD, @@offset:DWORD
+  USES EAX, EBX, EDX
+
+    MOV EBX, PORTAL_SIZE  ; Offset to get clone in center of portal
+    SUB EBX, BLOCK_SIZE
+    SHR EBX, 1
+
+    MOV EAX, [@@portal_ptr]
+    CALL directionNext, [EAX +  Portal.direction]
+    CMP EDX, 0
+    JE @@vertical
+      ;; horizontal portal
+      MOV EAX, EBX          ; Set in center
+
+      CMP EDX, 1
+      JE @@direction_down
+      ;; direction up
+        MOV EDX, 0
+        JMP @@update_position
+      @@direction_down:
+        MOV EDX, POSITION_CORRECTION
+        JMP @@update_position
+
+    @@vertical:
+      MOV EDX, EBX          ; Set in center
+
+      CMP EAX, 1
+      JE @@direction_right
+      ;; direction left
+        MOV EAX, 0
+        JMP @@update_position
+      @@direction_right:
+        MOV EAX, POSITION_CORRECTION
+        JMP @@update_position
+
+  @@update_position:
+    MOV EBX, [@@portal_ptr]
+    ADD EAX, [EBX + Portal.x]
+    ADD EDX, [EBX + Portal.y]
+
+    MOV EBX, [@@clone_ptr]
+    MOV [EBX + Player.x], EAX
+    MOV [EBX + Player.y], EDX
+  
+    ;; Offset player from initial position -> dedicated illusion position
+    ;; Clone move direction
+    MOV EBX, [@@portal_ptr]
+    CALL directionNext, [EBX + Portal.direction]
+
+    ;; Amount of time the clone need to offset
+    MOV EBX, [@@offset]
+    IMUL EAX, EBX
+    IMUL EDX, EBX
+
+    ;; Apply offset to clone
+    MOV EBX, [@@clone_ptr]
+    ADD [EBX + Player.x], EAX
+    ADD [EBX + Player.y], EDX
+
+    RET
+ENDP updateClonePosition
+
+;Checks level and list of portals
 PROC checkCollision 
 	ARG @@x:DWORD, @@y:DWORD
 	USES EAX, EBX
@@ -931,8 +1043,8 @@ ENDP
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-  portal_A  Portal  <0, 0, OFFSET portal_B, OFFSET clone_A, UP>
-  portal_B  Portal  <0, 0, OFFSET portal_A, OFFSET clone_B, DOWN>
+  portal_A  Portal  <0, 0, OFFSET portal_B, UP>
+  portal_B  Portal  <0, 0, OFFSET portal_A, DOWN>
 
   laser     Laser   <>
 
