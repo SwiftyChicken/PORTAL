@@ -56,8 +56,8 @@ PROC tryFitHor
 
         CALL checkIntersection, [@@x], [@@y], EAX, [@@y], [portal_A.x], [portal_A.y], [portal_A.x], EBX
         CMP DL, TRUE
-        JE @@failed
-          JMP @@check_fit
+        JNE @@check_fit
+          JMP @@failed
 
      @@horizontal_A:
         MOV EBX, [portal_A.x]
@@ -65,8 +65,10 @@ PROC tryFitHor
 
         CALL checkIntersection, [@@x], [@@y], EAX, [@@y], [portal_A.x], [portal_A.y], EBX, [portal_A.y]
         CMP DL, TRUE
-        JE @@failed
-          JMP @@check_fit
+        JNE @@check_fit
+          @@failed:
+            MOV DL, FALSE
+            RET
 
     @@check_fit:
       ;; Check if start point in wall
@@ -104,10 +106,6 @@ PROC tryFitHor
 
       MOV DL, TRUE
       RET
-
-    @@failed:
-      MOV DL, FALSE
-      RET
 ENDP tryFitHor
 
 PROC tryFitVert
@@ -132,8 +130,10 @@ PROC tryFitVert
 
         CALL checkIntersection, [@@x], [@@y], [@@x], EAX, [portal_A.x], [portal_A.y], [portal_A.x], EBX
         CMP DL, TRUE
-        JE @@failed
-          JMP @@check_fit
+        JNE @@check_fit
+          @@failed:
+            MOV DL, FALSE
+            RET
 
      @@horizontal_A:
         MOV EBX, [portal_A.x]
@@ -141,8 +141,8 @@ PROC tryFitVert
 
         CALL checkIntersection, [@@x], [@@y], [@@x], EAX, [portal_A.x], [portal_A.y], EBX, [portal_A.y]
         CMP DL, TRUE
-        JE @@failed
-          JMP @@check_fit
+        JNE @@check_fit
+          JMP @@failed
 
     @@check_fit:
       ;; Check if start point in wall
@@ -181,9 +181,6 @@ PROC tryFitVert
     MOV DL, TRUE
     RET
 
-    @@failed:
-      MOV DL, FALSE
-      RET
 ENDP tryFitVert
 
 PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
@@ -243,7 +240,9 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
         DEC ECX
         CMP ECX, 0
         JGE @@hor_try_2
-    JMP @@failed
+          @@failed:
+            MOV DL, FALSE  ; Couldn't fit the portal
+            RET
 
   @@vertical:
     ;; Try portal from [y - half_size => x]
@@ -298,10 +297,6 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
     MOV [EBX], EDX      
 
     MOV DL, TRUE  ; Couldn't fit the portal
-    RET
-
-  @@failed:
-    MOV DL, FALSE  ; Couldn't fit the portal
     RET
 ENDP tryFitPortal
 
@@ -471,6 +466,7 @@ PROC createPortal
     MOV EAX, [@@direction]
     MOV [portal_A.direction], EAX
     MOV [portal_A.active], TRUE
+    CALL updateClone, OFFSET portal_A
     RET
 
   @@create_B:
@@ -481,6 +477,7 @@ PROC createPortal
     MOV EAX, [@@direction]
     MOV [portal_B.direction], EAX
     MOV [portal_B.active], TRUE
+    CALL updateClone, OFFSET portal_B
     CALL swapPortals
     RET
 
@@ -675,6 +672,12 @@ PROC checkPortalCollision
 
   RET
 ENDP checkPortalCollision
+
+PROC updateClone
+  ARG portal_ptr:DWORD
+    
+  RET
+ENDP updateClone
 
 PROC checkInsidePortal
   ARG @@x:DWORD, @@y:DWORD
@@ -934,8 +937,8 @@ DATASEG
   laser     Laser   <>
 
   player    Player  <40, 20>
-  clone_A   Player  <portal_A.x, portal_A.y>
-  clone_B   Player  <portal_B.x, portal_B.y>
+  clone_A   Player  <0, 0>
+  clone_B   Player  <5, 0>
 
   gravity_inc DB FALSE ; Simulate gravity of 0.5
 ;-----------------------------------------------------------

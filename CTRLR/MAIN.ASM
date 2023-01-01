@@ -338,14 +338,33 @@ PROC main
     ;; DRAW FUNCTIONS
     CALL drawLevel
 
-    ;;DRAW -> PLAYER ANIMATION
+    ;;DRAW -> PLAYER ANIMATION + CLONES
     CMP [player.direction], RIGHT
     JE @@right
       CALL draw, [character_L.image], [player.x], [player.y], TRUE
+
+      CMP [portal_A.active], TRUE
+      JNE @@draw_clone_B_L
+        CALL draw, [character_L.image], [clone_A.x], [clone_A.y], FALSE
+
+      @@draw_clone_B_L:
+        CMP [portal_B.active], TRUE
+        JNE @@laser_animation
+          CALL draw, [character_L.image], [clone_B.x], [clone_B.y], FALSE
+
       JMP @@laser_animation
 
       @@right:
         CALL draw, [character_R.image], [player.x], [player.y], TRUE
+
+        CMP [portal_A.active], TRUE
+        JNE @@draw_clone_B_R
+          CALL draw, [character_R.image], [clone_A.x], [clone_A.y], FALSE
+
+        @@draw_clone_B_R:
+          CMP [portal_B.active], TRUE
+          JNE @@laser_animation
+            CALL draw, [character_R.image], [clone_B.x], [clone_B.y], FALSE
 
     ;;DRAW -> LASER ANIMATION
     @@laser_animation:
