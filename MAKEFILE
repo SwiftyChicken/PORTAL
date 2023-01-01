@@ -8,7 +8,7 @@ ASM = tasm
 LINK = wlink
 
 # use TASM with debug info (stripped anyway by wlink if not used)
-AFLAGS = /ml /m2 /w2 /z /zi /t
+AFLAGS = /ml /m2 /w0 /z /zi /t
 LFLAGS = option quiet system pmodew name $@ file   
 
 lib = OBJ\KEYB.OBJ OBJ\FILE.OBJ OBJ\STD.OBJ

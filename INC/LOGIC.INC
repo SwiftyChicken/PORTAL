@@ -14,9 +14,12 @@ HEIGHT_BOUNDRY EQU 49
 FINISH EQU WIDTH_BOUNDRY - BLOCK_SIZE
 PORTAL_A EQU 0
 PORTAL_B EQU 1
+POSITION_CORRECTION EQU -4
+;; LVL CODES
 EMPTY EQU 00H
 WALL EQU 01H
 UNTARGETABLE EQU 02H
+PORTAL EQU 03H
 
 STRUC Player
   x dd ?
@@ -24,15 +27,14 @@ STRUC Player
   vx dd 0
   vy dd 0
   jumping dd 0
-  direction dd RIGHT
+  direction dd RIGHT  ; direction in which player is looking
 ENDS Player
 
 STRUC Portal
   x dd ?
   y dd ?
   portal dd ?
-  direction dd ?
-  clone dd ?
+  direction dd ?      ; portal exit direction
   active dd FALSE
   size dd PORTAL_SIZE
 ENDS Portal
@@ -52,6 +54,7 @@ GLOBAL loadLevel:PROC
 GLOBAL createPortal:PROC
 GLOBAL useLaser:PROC
 GLOBAL swapPortals:PROC
+GLOBAL checkInsidePortal:PROC
 
 GLOBAL portal_A:Portal
 GLOBAL portal_B:Portal

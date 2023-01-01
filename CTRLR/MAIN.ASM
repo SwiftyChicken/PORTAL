@@ -78,18 +78,25 @@ PROC pressHandler
         CALL resetAnimated, OFFSET character_L
         CALL resetAnimated, OFFSET character_R
         
-        CMP [player.vy], 0
+        CMP [player.vy], 1
         JNE @@return
           MOV [player.vy], -3
           RET
 
   @@check_n:
 	  CMP	AL, N_KEY
-    JNE @@check_s
+    JNE @@check_gun
       CMP [N_released], FALSE
       JE @@return
         MOV [N_released], FALSE
         CALL nextLevel
+      RET
+
+  ;; PORTAL GUN CONTROLS
+  @@check_gun:
+    CALL checkInsidePortal, [player.x], [player.y]
+    CMP DL, TRUE
+    JNE @@check_s
       RET
 
   @@check_s:
@@ -197,13 +204,13 @@ PROC releaseHandler
       MOV [N_released], TRUE
       RET
 
+  ;; PORTAL GUN CONTROLS
   @@check_s:
 	  CMP	AL, S_KEY
     JNE @@check_z
       MOV [S_released], TRUE
       RET
 
-  ;; Shooting Keys
   @@check_z:
 	  CMP	AL, Z_KEY
     JNE @@check_e
@@ -331,14 +338,29 @@ PROC main
     ;; DRAW FUNCTIONS
     CALL drawLevel
 
-    ;;DRAW -> PLAYER ANIMATION
+    ;;DRAW -> PLAYER ANIMATION + CLONES
     CMP [player.direction], RIGHT
     JE @@right
       CALL draw, [character_L.image], [player.x], [player.y], TRUE
+
+      CMP [portal_A.active], TRUE
+      JNE @@laser_animation
+        CMP [portal_B.active], TRUE
+        JNE @@laser_animation
+          CALL draw, [character_L.image], [clone_A.x], [clone_A.y], TRUE
+          CALL draw, [character_L.image], [clone_B.x], [clone_B.y], TRUE
+
       JMP @@laser_animation
 
       @@right:
         CALL draw, [character_R.image], [player.x], [player.y], TRUE
+
+        CMP [portal_A.active], TRUE
+        JNE @@laser_animation
+          CMP [portal_B.active], TRUE
+          JNE @@laser_animation
+            CALL draw, [character_R.image], [clone_A.x], [clone_A.y], TRUE
+            CALL draw, [character_R.image], [clone_B.x], [clone_B.y], TRUE
 
     ;;DRAW -> LASER ANIMATION
     @@laser_animation:

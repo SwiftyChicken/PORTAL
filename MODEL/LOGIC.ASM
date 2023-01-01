@@ -19,22 +19,58 @@ INCLUDE "INC/LOGIC.INC"
 CODESEG
 
 PROC centerPostion
-  ARG @@pos_ptr:DWORD
-  USES EAX, EBX
+  ARG @@x_ptr:DWORD, @@y_ptr:DWORD
+  USES EAX, EBX, EDX
 
-  MOV EBX, [@@pos_ptr]
+  MOV EAX, [@@x_ptr]
+  MOV EDX, [@@y_ptr]
 
-  MOV EAX, BLOCK_SIZE
-  SHR EAX, 1
-  ADD [EBX], EAX
+  MOV EBX, BLOCK_SIZE
+  SHR EBX, 1
+
+  ADD [EAX], EBX
+  ADD [EDX], EBX
 
   RET
 ENDP centerPostion
 
 PROC tryFitHor
   ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD
-  USES EAX
+  USES EAX, EBX
+    ;; check if don't overlap with portal A
+    ;; (Portal B will despawn anyways)
+    CMP [portal_A.active], TRUE
+    JNE @@check_fit
 
+    ; New portal x end point
+    MOV EAX, [@@x]
+    ADD EAX, PORTAL_SIZE - 1
+
+    CMP [portal_A.direction], UP
+    JE @@horizontal_A
+    CMP [portal_A.direction], DOWN
+    JE @@horizontal_A
+     ;@@vertical_A:
+        MOV EBX, [portal_A.y]
+        ADD EBX, PORTAL_SIZE - 1
+
+        CALL checkIntersection, [@@x], [@@y], EAX, [@@y], [portal_A.x], [portal_A.y], [portal_A.x], EBX
+        CMP DL, TRUE
+        JNE @@check_fit
+          JMP @@failed
+
+     @@horizontal_A:
+        MOV EBX, [portal_A.x]
+        ADD EBX, PORTAL_SIZE - 1
+
+        CALL checkIntersection, [@@x], [@@y], EAX, [@@y], [portal_A.x], [portal_A.y], EBX, [portal_A.y]
+        CMP DL, TRUE
+        JNE @@check_fit
+          @@failed:
+            MOV DL, FALSE
+            RET
+
+    @@check_fit:
       ;; Check if start point in wall
       CALL checkCollision, [@@x], [@@y]
       CMP DL, WALL
@@ -69,17 +105,46 @@ PROC tryFitHor
       JNE @@failed
 
       MOV DL, TRUE
-      RET
-
-    @@failed:
-      MOV DL, FALSE
       RET
 ENDP tryFitHor
 
 PROC tryFitVert
   ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD
-  USES EAX
+  USES EAX, EBX
+    ;; check if don't overlap with portal A
+    ;; (Portal B will despawn anyways)
+    CMP [portal_A.active], TRUE
+    JNE @@check_fit
 
+    ; New portal y end point
+    MOV EAX, [@@y]
+    ADD EAX, PORTAL_SIZE - 1
+
+    CMP [portal_A.direction], UP
+    JE @@horizontal_A
+    CMP [portal_A.direction], DOWN
+    JE @@horizontal_A
+     ;@@vertical_A:
+        MOV EBX, [portal_A.y]
+        ADD EBX, PORTAL_SIZE - 1
+
+        CALL checkIntersection, [@@x], [@@y], [@@x], EAX, [portal_A.x], [portal_A.y], [portal_A.x], EBX
+        CMP DL, TRUE
+        JNE @@check_fit
+          @@failed:
+            MOV DL, FALSE
+            RET
+
+     @@horizontal_A:
+        MOV EBX, [portal_A.x]
+        ADD EBX, PORTAL_SIZE - 1
+
+        CALL checkIntersection, [@@x], [@@y], [@@x], EAX, [portal_A.x], [portal_A.y], EBX, [portal_A.y]
+        CMP DL, TRUE
+        JNE @@check_fit
+          JMP @@failed
+
+    @@check_fit:
       ;; Check if start point in wall
       CALL checkCollision, [@@x], [@@y]
       CMP DL, WALL
@@ -113,12 +178,9 @@ PROC tryFitVert
       CMP DL, EMPTY
       JNE @@failed
 
-      MOV DL, TRUE
-      RET
+    MOV DL, TRUE
+    RET
 
-    @@failed:
-      MOV DL, FALSE
-      RET
 ENDP tryFitVert
 
 PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
@@ -132,13 +194,10 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
   MOV [@@x_inc], EAX
   MOV [@@y_inc], EDX
   
-  CMP [@@direction], UP
-  JE @@horizontally
-  CMP [@@direction], DOWN
-  JE @@horizontally
-  JMP @@vertically
-
-  @@horizontally:
+  CMP [@@direction], LEFT
+  JE @@vertical
+  CMP [@@direction], RIGHT
+  JE @@vertical
     ;; Try to fit portal from [x-half_size => x]
     MOV ECX, PORTAL_SIZE
     SHR ECX, 1
@@ -171,7 +230,7 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
       MOV EAX, [@@x0_ptr]
       MOV EAX, [EAX]
       SUB EAX, PORTAL_SIZE
-      ADD EAX, ECX          ; x - <block_size -> half_block_size>
+      ADD EAX, ECX          ; x + <block_size -> half_block_size>
 
       PUSH EDX
       CALL tryFitHor, EAX, EDX, [@@x_inc], [@@y_inc]
@@ -181,17 +240,19 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
         DEC ECX
         CMP ECX, 0
         JGE @@hor_try_2
-    JMP @@failed
+          @@failed:
+            MOV DL, FALSE  ; Couldn't fit the portal
+            RET
 
-  @@vertically:
-    ;; Try portal from [y + half_size => x]
+  @@vertical:
+    ;; Try portal from [y - half_size => x]
     MOV ECX, PORTAL_SIZE
     SHR ECX, 1
 
     @@vert_try_1:
       MOV EDX, [@@y0_ptr]
       MOV EDX, [EDX]
-      SUB EDX, ECX          ; y + <half_block_size>
+      SUB EDX, ECX          ; y - <half_block_size>
 
       MOV EAX, [@@x0_ptr]
       MOV EAX, [EAX]
@@ -237,22 +298,16 @@ PROC tryFitPortal   ;; Return FALSE in DL if couldn't fit the portal
 
     MOV DL, TRUE  ; Couldn't fit the portal
     RET
-
-  @@failed:
-    MOV DL, FALSE  ; Couldn't fit the portal
-    RET
 ENDP tryFitPortal
 
 PROC createPortal
-  ARG @@x0, @@y0, @@direction:DWORD
+  ARG @@x0:DWORD, @@y0:DWORD, @@direction:DWORD
   USES EAX, EBX, EDX
 
-  ;; Center position from player
+ ;; Center position from player
   LEA EAX, [@@x0]
-  CALL centerPostion, EAX
-
-  LEA EAX, [@@y0]
-  CALL centerPostion, EAX
+  LEA EDX, [@@y0]
+  CALL centerPostion, EAX, EDX
 
   ;; Save laser direction
   MOV EAX, [@@direction]
@@ -349,7 +404,7 @@ PROC createPortal
     CMP [@@direction], DOWN_RIGHT
     JNE @@check_down_left
       ; Check Block under it
-      MOV EBX, POS_UP ; y+ := POS_UP -> POS_DOWN
+      MOV EBX, POS_UP   ; y+ := POS_UP -> POS_DOWN
       ADD EBX, [@@y0]   ; y of block under
       ADD EAX, [@@x0]   ; x of block under
       CALL checkCollision, EAX, EBX 
@@ -361,7 +416,7 @@ PROC createPortal
     CMP [@@direction], DOWN_LEFT
     JNE @@not_slanting
       ; Check Block under it
-      MOV EBX, POS_UP ; y+ := POS_UP -> POS_DOWN
+      MOV EBX, POS_UP   ; y+ := POS_UP -> POS_DOWN
       ADD EBX, [@@y0]   ; y of block under
       ADD EAX, [@@x0]   ; x of block under
       CALL checkCollision, EAX, EBX 
@@ -394,7 +449,7 @@ PROC createPortal
   @@try_placing:
     LEA EAX, [@@x0]
     LEA EDX, [@@y0]
-    CALL tryFitPortal, EAX, EDX, [@@direction]
+    CALL tryFitPortal, EAX, EDX, [@@direction], 0, 0
     CMP DL, TRUE     ; Did the function succeed?
     JNE @@return
   
@@ -422,6 +477,7 @@ PROC createPortal
     MOV [portal_B.direction], EAX
     MOV [portal_B.active], TRUE
     CALL swapPortals
+    CALL updateClones, FALSE, FALSE, FALSE, FALSE, FALSE
     RET
 
   @@return:
@@ -442,6 +498,12 @@ ENDP useLaser
 
 PROC swapPortals
   USES EAX, EDX
+
+  CMP [portal_A.active], TRUE
+  JNE @@return
+  CMP [portal_B.active], TRUE
+  JNE @@return
+
   MOV EAX, [portal_A.x]
   MOV EDX, [portal_A.y]
 
@@ -460,39 +522,47 @@ PROC swapPortals
   MOV [portal_A.direction], EDX
   MOV [portal_B.direction], EAX
 
-  RET
+  @@return:
+    RET
 ENDP swapPortals
 
 PROC physicsHandler
-  USES EAX, EBX
+  USES EAX, EBX, EDX
 
   MOV EAX, [player.vx]
   ADD EAX, [player.x]
 
-  CALL checkBlockCollision, EAX, [player.y]
+  CALL checkPlayerCollision, EAX, [player.y]
+  CMP DL, PORTAL
+  JE @@move_x
+
   CMP DL, EMPTY
   JNE @@dont_move_x
-    MOV [player.x], EAX
-  @@dont_move_x:
-    MOV [player.vx], 0
+    @@move_x:
+      MOV [player.x], EAX
+    @@dont_move_x:
+      MOV [player.vx], 0
   
-  @@move_y:
+  @@try_move_y:
     MOV EAX, [player.vy]
     SAR EAX, SLOW_DOWN      ; Slown down vertical movement
     ADD EAX, [player.y]
 
-    CALL checkBlockCollision, [player.x], EAX
+    CALL checkPlayerCollision, [player.x], EAX
+    CMP DL, PORTAL
+    JE @@move_y
     CMP DL, EMPTY
     JNE @@slow_down_y
-      MOV [player.y], EAX
-      CMP [gravity_inc], TRUE
-        MOV [gravity_inc], TRUE
-      JNE @@return
-        MOV [gravity_inc], FALSE
-        CMP [player.vy], MAX_VELOCITY
-        JG @@return
-          INC [player.vy]
-          RET
+      @@move_y:
+        MOV [player.y], EAX
+        CMP [gravity_inc], TRUE   ; Should gravity be applied? (1/2 of the time)
+          MOV [gravity_inc], TRUE
+        JNE @@return
+          MOV [gravity_inc], FALSE
+          CMP [player.vy], MAX_VELOCITY
+          JGE @@return
+            INC [player.vy]
+            JMP @@return
   @@slow_down_y:
     CMP [player.vy], 0
     JL @@slow_up
@@ -501,7 +571,7 @@ PROC physicsHandler
     
     @@slow_up:
       INC [player.vy]
-      JMP @@move_y
+      JMP @@try_move_y
 
     @@slow_down:
       DEC [player.vy]
@@ -509,64 +579,343 @@ PROC physicsHandler
       SAR EAX, SLOW_DOWN
       CMP EAX, 0  ;IF y velocity 0 it has hit the ground
       JE @@dont_move_y
-      JMP @@move_y
+      JMP @@try_move_y
 
   @@dont_move_y:
-    MOV [player.vy], 0
+    MOV [player.vy], 1
+    MOV [gravity_inc], FALSE ; reset gravity_inc
     MOV [player.jumping], FALSE
 
   @@return:
+    CALL updateClones, FALSE, FALSE, FALSE, FALSE, FALSE
     RET
 ENDP physicsHandler
 
 ; AABB collision
-PROC checkBlockCollision
-	ARG @@x0:DWORD, @@y0:DWORD
+PROC checkPlayerCollision
+	ARG @@x:DWORD, @@y:DWORD
 	USES EAX, EBX
 
-	MOV EAX, [@@x0]
-	ADD EAX, BLOCK_SIZE - 1
-	MOV EBX, [@@y0]
-	ADD EBX, BLOCK_SIZE - 1
+  CMP [portal_A.active], TRUE
+  JNE @@block_collision
+  CMP [portal_B.active], TRUE
+  JNE @@block_collision
 
-  CALL checkCollision, [@@x0], [@@y0] ; check upper left for collision
+  CALL checkPortalCollision, [@@x], [@@y]
   CMP DL, EMPTY
   JNE @return
 
-  CALL checkCollision, EAX, [@@y0]		; check upper right for collision
-  CMP DL, EMPTY
-  JNE @return
+  @@block_collision:
+	  MOV EAX, [@@x]
+	  ADD EAX, BLOCK_SIZE - 1
+	  MOV EBX, [@@y]
+	  ADD EBX, BLOCK_SIZE - 1
 
-  CALL checkCollision, [@@x0], EBX		; check lower left for collision
-  CMP DL, EMPTY
-  JNE @return
+    CALL checkCollision, [@@x], [@@y] ; check upper left for collision
+    CMP DL, EMPTY
+    JNE @return
 
-  CALL checkCollision, EAX, EBX				; check lower right for collision
+    CALL checkCollision, EAX, [@@y]		; check upper right for collision
+    CMP DL, EMPTY
+    JNE @return
+
+    CALL checkCollision, [@@x], EBX		; check lower left for collision
+    CMP DL, EMPTY
+    JNE @return
+
+    CALL checkCollision, EAX, EBX				; check lower right for collision
 
   @return:
     RET
-ENDP checkBlockCollision
+ENDP checkPlayerCollision
 
-; Checks level and list of portals
+PROC checkPortalCollision
+  ARG @@x:DWORD, @@y:DWORD
+  USES EAX, EBX, ECX
+
+  MOV DL, EMPTY     ; Start with no collision
+  LEA EAX, [@@x]
+  LEA EBX, [@@y]
+  CALL centerPostion, EAX, EBX ; use player core position
+
+  PUSH OFFSET portal_A
+  PUSH OFFSET portal_B
+  MOV ECX, 2
+
+  @@check:          ; Check both portal in stack
+    POP EBX                               ; EBX will hold portal ref
+    CMP DL, EMPTY                         ; Check if collision is found
+    JNE @@next                            ; Make sure to restore stack
+
+    CMP [EBX + Portal.active], TRUE       ; No point in checking inactive portal
+    JNE @@next
+
+    PUSH EDX
+      MOV EAX, [EBX + Portal.direction]
+      CALL opositeDirection, EAX        ; direction in wich core is approaching
+      MOV EAX, EDX
+
+      CALL directionNext, EAX         ; EAX -> x+ EDX -> y+
+      CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, EBX
+      CMP EDX, FALSE
+      JNE @@collision
+      JMP @@no_collision
+
+    @@collision:
+      MOV DL, PORTAL  ; Collision with portal has been made
+      JMP @@next
+
+    @@no_collision:
+      POP EDX
+    @@next:
+      LOOP @@check
+
+  RET
+ENDP checkPortalCollision
+
+PROC checkInsidePortal
+  ARG @@x:DWORD, @@y:DWORD
+  USES EAX, EBX
+
+  ;; Can't go inside portal if they aren't both active
+  CMP [portal_A.active], TRUE
+  JNE @@outside
+  CMP [portal_B.active], TRUE
+  JNE @@outside
+
+    LEA EAX, [@@x]
+    LEA EBX, [@@y]
+    CALL centerPostion, EAX, EBX ; use player core position
+     
+    CALL opositeDirection, [portal_A.direction]
+    CALL directionNext, EDX
+    CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, OFFSET portal_A
+    CMP EDX, FALSE
+    JNE @@inside
+
+    CALL opositeDirection, [portal_B.direction]
+    CALL directionNext, EDX
+    CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, OFFSET portal_B
+    CMP EDX, FALSE
+    JNE @@inside
+
+  @@outside:
+    MOV DL, FALSE
+    RET
+
+  @@inside:
+    MOV DL, TRUE
+    RET
+ENDP checkInsidePortal
+
+;; If Block center is entering the portal
+;; -> RETURN: With how much pixel the block is entering in EDX
+;; -> ELSE RETURN: FALSE
+PROC checkApproachingPortal
+  ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD, @@portal_ptr:DWORD
+  USES EAX, EBX, ECX
+  
+  MOV EBX, [@@portal_ptr]   ; EBX will hold portal ref
+  MOV EAX, [@@x_inc]
+  CMP EAX, 0                ; If x+ is 0 => horizontal
+  JE @@horizontal
+   ;@@vertical:
+      ;; check if y is in effective area
+      MOV EAX, BLOCK_SIZE/2       ; EAX will not be used because it's 0
+      ADD EAX, [EBX + Portal.y]   ; Calculate start effective area
+
+      CMP EAX, [@@y]
+      JG @@not_approaching
+
+      MOV EAX, [EBX + Portal.size]; EAX will not be used because it's 0
+      SUB EAX, BLOCK_SIZE/2
+      ADD EAX, [EBX + Portal.y]   ; Calculate end effective area
+
+      CMP EAX, [@@y]
+      JLE @@not_approaching
+
+      ;; check if x approach effective area with in half_block_size
+      MOV ECX, BLOCK_SIZE/2
+      @@approach_x:
+        MOV EAX, [@@x_inc]
+        ADD [@@x], EAX
+        MOV EAX, [EBX + Portal.x]
+        CMP EAX, [@@x]
+        JE @@approaching
+        LOOP @@approach_x
+      JMP @@not_approaching
+
+    @@horizontal:
+      ;; check if x is in effective area
+      MOV EAX, BLOCK_SIZE/2       ; EAX will not be used because it's 0
+      ADD EAX, [EBX + Portal.x]   ; Calculate start effective area
+
+      CMP EAX, [@@x]
+      JG @@not_approaching
+
+      MOV EAX, [EBX + Portal.size]; EAX will not be used because it's 0
+      SUB EAX, BLOCK_SIZE/2
+      ADD EAX, [EBX + Portal.x]   ; Calculate end effective area
+
+      CMP EAX, [@@x]
+      JLE @@not_approaching
+
+      ;; check if y approach effective area with in half_block_size
+      MOV ECX, BLOCK_SIZE/2
+      @@approach_y:
+        MOV EAX, [@@y_inc]
+        ADD [@@y], EAX
+        MOV EAX, [EBX + Portal.y]
+        CMP EAX, [@@y]
+        JE @@approaching
+        LOOP @@approach_y
+      JMP @@not_approaching
+         
+  @@not_approaching:
+    MOV EDX, FALSE
+    RET
+
+  @@approaching:
+    ;; return how much is inside the Portal
+    MOV EDX, ECX
+    RET
+ENDP checkApproachingPortal
+
+PROC updateClones
+  ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD, @@clone_ptr:DWORD, @@portal_ptr:DWORD ; => LOCAL VARIABLES (NOT PARAMETERS)
+  USES EAX, EBX, ECX, EDX
+
+  ;; Can't go inside portal if they aren't both active
+  CMP [portal_A.active], TRUE
+  JNE @@return
+  CMP [portal_B.active], TRUE
+  JNE @@return
+
+  MOV EAX, [player.x]
+  MOV [@@x], EAX
+  LEA EAX, [@@x]
+
+  MOV EBX, [player.y]
+  MOV [@@y], EBX
+  LEA EBX, [@@y]
+
+  CALL centerPostion, EAX, EBX
+
+  PUSH OFFSET clone_A
+  PUSH OFFSET portal_A
+
+  PUSH OFFSET clone_B
+  PUSH OFFSET portal_B
+  
+  MOV ECX, 2      ; Clones to check
+
+  @@update:
+    POP [@@portal_ptr] ; Portal -> STRUC Portal
+    POP [@@clone_ptr] ; Clone  -> STRUC Player
+
+    ;; Get how much the player is in the other portal
+    MOV EBX, [@@portal_ptr]
+    MOV EBX, [EBX + Portal.portal]                    ; Get other portal pointer
+    CALL opositeDirection, [EBX + Portal.direction]   ; exit direction -> entre direction (:= EDX)
+    CALL directionNext, EDX
+    MOV [@@x_inc], EAX
+    MOV [@@y_inc], EDX
+
+    CALL checkApproachingPortal, [@@x], [@@y], [@@x_inc], [@@y_inc], EBX
+
+    ;; Place Clone based on how far in the player is into the portal
+    CALL updateClonePosition, [@@clone_ptr], [@@portal_ptr], EDX
+
+    @@continue:
+      LOOP @@update
+
+  @@return:
+    RET
+ENDP updateClones
+
+PROC updateClonePosition
+  ARG @@clone_ptr:DWORD, @@portal_ptr:DWORD, @@offset:DWORD
+  USES EAX, EBX, EDX
+
+    MOV EBX, PORTAL_SIZE  ; Offset to get clone in center of portal
+    SUB EBX, BLOCK_SIZE
+    SHR EBX, 1
+
+    MOV EAX, [@@portal_ptr]
+    CALL directionNext, [EAX +  Portal.direction]
+    CMP EDX, 0
+    JE @@vertical
+      ;; horizontal portal
+      MOV EAX, EBX          ; Set in center
+
+      CMP EDX, 1
+      JE @@direction_down
+      ;; direction up
+        MOV EDX, 0
+        JMP @@update_position
+      @@direction_down:
+        MOV EDX, POSITION_CORRECTION
+        JMP @@update_position
+
+    @@vertical:
+      MOV EDX, EBX          ; Set in center
+
+      CMP EAX, 1
+      JE @@direction_right
+      ;; direction left
+        MOV EAX, 0
+        JMP @@update_position
+      @@direction_right:
+        MOV EAX, POSITION_CORRECTION
+        JMP @@update_position
+
+  @@update_position:
+    MOV EBX, [@@portal_ptr]
+    ADD EAX, [EBX + Portal.x]
+    ADD EDX, [EBX + Portal.y]
+
+    MOV EBX, [@@clone_ptr]
+    MOV [EBX + Player.x], EAX
+    MOV [EBX + Player.y], EDX
+  
+    ;; Offset player from initial position -> dedicated illusion position
+    ;; Clone move direction
+    MOV EBX, [@@portal_ptr]
+    CALL directionNext, [EBX + Portal.direction]
+
+    ;; Amount of time the clone need to offset
+    MOV EBX, [@@offset]
+    IMUL EAX, EBX
+    IMUL EDX, EBX
+
+    ;; Apply offset to clone
+    MOV EBX, [@@clone_ptr]
+    ADD [EBX + Player.x], EAX
+    ADD [EBX + Player.y], EDX
+
+    RET
+ENDP updateClonePosition
+
+;Checks level and list of portals
 PROC checkCollision 
-	ARG @@x0:DWORD, @@y0:DWORD
+	ARG @@x:DWORD, @@y:DWORD
 	USES EAX, EBX
 
   ;; Check for out of bound
-  CMP [@@x0], START_BOUNDRY
+  CMP [@@x], START_BOUNDRY
   JL @@outOfBound
 
-  CMP [@@x0], WIDTH_BOUNDRY
+  CMP [@@x], WIDTH_BOUNDRY
   JG @@outOfBound
 
-  CMP [@@y0], START_BOUNDRY
+  CMP [@@y], START_BOUNDRY
   JL @@outOfBound
 
-  CMP [@@y0], HEIGHT_BOUNDRY
+  CMP [@@y], HEIGHT_BOUNDRY
   JG @@outOfBound
 
   ; CONVERT Y: 80x50 -> 16x10
-	MOV EAX, [@@y0]
+	MOV EAX, [@@y]
 	MOV EBX, BLOCK_SIZE
   XOR EDX, EDX          ;Clear EDX
 	DIV EBX
@@ -574,7 +923,7 @@ PROC checkCollision
 	PUSH EAX
 
   ;; CONVERT X in EAX: 80x50 -> 16x10
-	MOV EAX, [@@x0]
+	MOV EAX, [@@x]
 	MOV EBX, BLOCK_SIZE
   XOR EDX, EDX          ;Clear EDX
 	DIV EBX
@@ -590,6 +939,100 @@ PROC checkCollision
 
 ENDP checkCollision 
 
+;; check if the lines A and B are intersecting
+;; A -> player (catch teleportation only if perpendicular movement)
+;;   -> portal (catch overlap)
+;; B -> portal
+;; Note: the lines are ALWAYS horizontal or vertical
+PROC checkIntersection
+  ARG @@A_x0:DWORD, @@A_y0:DWORD, @@A_x1:DWORD, @@A_y1:DWORD, @@B_x0:DWORD, @@B_y0:DWORD, @@B_x1:DWORD, @@B_y1:DWORD
+  USES EAX, EBX
+  ;; Check if A is horizontal -> EAX
+  MOV EAX, [@@A_y0]
+  CMP EAX, [@@A_y1]
+  JE @@A_horizontal
+    MOV EAX, FALSE
+    JMP @@check_horizontal_B
+  @@A_horizontal:
+    MOV EAX, TRUE
+
+  ;; Check if B is horizontal -> EBX
+  @@check_horizontal_B:
+    MOV EBX, [@@B_y0]
+    CMP EBX, [@@B_y1]
+    JE @@B_horizontal
+      MOV EBX, FALSE
+      JMP @@check_type_intersection
+    @@B_horizontal:
+      MOV EBX, TRUE
+
+  ;; Check if they have same orientation
+  @@check_type_intersection:
+    CMP EAX, EBX
+    JNE @@checkPerpendicular
+    ;; Check if they share points 
+        CMP EAX, TRUE
+        JE @@checkParallelHorizontal
+       ;@@checkParallelVertical:
+          MOV EAX, [@@A_x0]
+          CMP EAX, [@@B_x0]
+          JNE @@no_intersection               ; check if they are on the same x
+
+          MOV EAX, [@@A_y0]
+          CMP EAX, [@@B_y0]
+          JL @@par_vert_situation1
+          JMP @@par_vert_situation2
+
+          @@par_vert_situation1:              ; Situation 1: A_y0<=B_y0<=A_y1<=B_y1
+            MOV EAX, [@@B_y0]
+            DEC EAX
+            CMP EAX, [@@A_y1]     
+            JLE @@intersection
+            JMP @@no_intersection
+            
+          @@par_vert_situation2:              ; Situation 2: B_y0<=A_y0<=B_y1<=A_y1
+            MOV EAX, [@@A_y0]
+            DEC EAX
+            CMP EAX, [@@B_y1]                   
+            JLE @@intersection
+            JMP @@no_intersection
+
+        @@checkParallelHorizontal:
+          MOV EAX, [@@A_y0]
+          CMP EAX, [@@B_y0]
+          JNE @@no_intersection               ; check if they are on the same y
+
+          MOV EAX, [@@A_x0]
+          CMP EAX, [@@B_x0]
+          JLE @@par_hor_situation1
+          JMP @@par_hor_situation2
+
+          @@par_hor_situation1:              ; Situation 1: A_x0<=B_x0<=A_x1<=B_x1
+            MOV EAX, [@@B_x0]
+            DEC EAX
+            CMP EAX, [@@A_x1]     
+            JLE @@intersection
+            JMP @@no_intersection
+            
+          @@par_hor_situation2:              ; Situation 2: B_x0<=A_x0<=B_x1<=A_x1
+            MOV EAX, [@@A_x0]
+            DEC EAX
+            CMP EAX, [@@B_x1]                   
+            JLE @@intersection
+            JMP @@no_intersection
+
+      @@checkPerpendicular:
+        JMP @@no_intersection
+
+  @@intersection:
+    MOV DL, TRUE
+    RET
+
+  @@no_intersection:
+    MOV DL, FALSE
+    RET
+ENDP checkIntersection
+
 PROC loadLevel
 	ARG @@fileName:DWORD
 	CALL loadFile, [@@fileName], OFFSET level, LEVEL_SIZE
@@ -600,16 +1043,16 @@ ENDP
 ; DATA
 ;-----------------------------------------------------------
 DATASEG
-  portal_A  Portal  <0, 0, OFFSET portal_B, OFFSET clone_A, UP>
-  portal_B  Portal  <0, 0, OFFSET portal_A, OFFSET clone_B, DOWN>
+  portal_A  Portal  <0, 0, OFFSET portal_B, UP>
+  portal_B  Portal  <0, 0, OFFSET portal_A, DOWN>
 
   laser     Laser   <>
 
   player    Player  <40, 20>
-  clone_A   Player  <portal_A.x, portal_A.y>
-  clone_B   Player  <portal_B.x, portal_B.y>
+  clone_A   Player  <0, 0>
+  clone_B   Player  <0, 0>
 
-  gravity_inc DB TRUE
+  gravity_inc DB FALSE ; Simulate gravity of 0.5
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
