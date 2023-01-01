@@ -530,6 +530,7 @@ PROC physicsHandler
   USES EAX, EBX, EDX
 
   MOV EAX, [player.vx]
+  SAR EAX, SLOW_DOWN      ; Slow down horizontal movement
   ADD EAX, [player.x]
 
   CALL checkPlayerCollision, EAX, [player.y]
@@ -541,7 +542,14 @@ PROC physicsHandler
     @@move_x:
       MOV [player.x], EAX
     @@dont_move_x:
-      MOV [player.vx], 0
+      CMP [player.vx], 0
+      JGE @@check_x_right
+        ADD [player.vx], 2
+        JMP @@try_move_y
+      @@check_x_right:
+        CMP [player.vx], 0
+        JE @@try_move_y
+          SUB [player.vx], 2
   
   @@try_move_y:
     MOV EAX, [player.vy]

@@ -41,31 +41,38 @@ PROC pressHandler
 	CMP	AL, LEFT_KEY
   JNE @@check_right
     MOV [player.direction], LEFT
-    SUB [player.vx], 1
+      
+    CMP [player.vx], 0
+    JL @@left_frame
+      SUB [player.vx], 2
 
-    ; Don't change frame mid air
-    CMP [player.jumping], FALSE
-    JNE @@return
-
-    ; Update Frame
-    CALL getNextFrame, OFFSET character_L
-    CALL updateFrame, OFFSET character_L
-    RET
+    @@left_frame:
+      ; Don't change frame mid air
+      CMP [player.jumping], FALSE
+      JNE @@return
+        ; Update Frame
+        CALL getNextFrame, OFFSET character_L
+        CALL updateFrame, OFFSET character_L
+        RET
 
   @@check_right:
 	  CMP	AL, RIGHT_KEY
     JNE @@check_up
       MOV [player.direction], RIGHT
-      ADD [player.vx], 1
 
-      ; Don't change frame mid air
-      CMP [player.jumping], FALSE
-      JNE @@return
+      CMP [player.vx], 0
+      JG @@right_frame
+        ADD [player.vx], 2
 
-      ;; Update Frame
-      CALL getNextFrame, OFFSET character_R
-      CALL updateFrame, OFFSET character_R
-      RET
+      @@right_frame:
+        ; Don't change frame mid air
+        CMP [player.jumping], FALSE
+        JNE @@return
+
+          ;; Update Frame
+          CALL getNextFrame, OFFSET character_R
+          CALL updateFrame, OFFSET character_R
+          RET
 
   @@check_up:
 	  CMP	AL, UP_KEY
