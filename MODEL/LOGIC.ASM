@@ -1050,7 +1050,7 @@ DATASEG
 
   player    Player  <40, 20>
   clone_A   Player  <0, 0>
-  clone_B   Player  <5, 0>
+  clone_B   Player  <0, 0>
 
   gravity_inc DB FALSE ; Simulate gravity of 0.5
 ;-----------------------------------------------------------
