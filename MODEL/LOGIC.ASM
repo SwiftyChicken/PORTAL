@@ -549,7 +549,7 @@ PROC physicsHandler
 
     CALL tryTeleporting, [player.x], [player.y], EAX, [player.y]
     CMP DL, FALSE
-    JNE @@try_move_y
+    JNE @@return
 
     CALL checkPlayerCollision, EAX, [player.y]
     CMP DL, PORTAL
@@ -592,6 +592,7 @@ PROC physicsHandler
     CALL checkPlayerCollision, [player.x], EAX
     CMP DL, PORTAL
     JE @@move_y
+
     CMP DL, EMPTY
     JNE @@slow_down_y
       @@move_y:
@@ -1209,7 +1210,7 @@ ENDP tryTeleporting
 PROC teleport
   ARG @@portal_ptr:DWORD, @@offset:DWORD, @@entering:DWORD
   USES EAX, EBX, EDX
-    ADD [@@offset], BLOCK_SIZE/2
+    ADD [@@offset], BLOCK_SIZE/2 ; So player don't get stuck in portal
     CALL updateClonePosition, OFFSET player, [@@portal_ptr], @@offset
 
     ;; adjust the velocities
