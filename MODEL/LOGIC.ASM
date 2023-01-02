@@ -1224,6 +1224,8 @@ PROC teleport
     CALL adjustVelocity, EAX, EDX, [EBX + Portal.direction]
 
     MOV [player.jumping], TRUE ; assume you're mid air when teleporting
+    MOV [gravity_inc], TRUE
+    MOV [vertical_inc], TRUE
   RET
 ENDP teleport
 
