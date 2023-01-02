@@ -1195,7 +1195,9 @@ PROC tryTeleporting
         CMP EDX, FALSE
         JE @@next
           ;; Teleport player to other portal
-          CALL teleport, [EBX + Portal.portal], EDX
+          MOV EAX, EDX
+          CALL opositeDirection, [EBX + Portal.direction]
+          CALL teleport, [EBX + Portal.portal], EAX, EDX
           MOV DL, TRUE
     @@next:
       LOOP @@check_portals
@@ -1205,13 +1207,67 @@ PROC tryTeleporting
 ENDP tryTeleporting
 
 PROC teleport
-  ARG @@portal_ptr:DWORD, @@offset:DWORD
-  USES EAX, EBX, ECX, EDX
+  ARG @@portal_ptr:DWORD, @@offset:DWORD, @@entering:DWORD
+  USES EAX, EBX, EDX
     ADD [@@offset], BLOCK_SIZE/2
     CALL updateClonePosition, OFFSET player, [@@portal_ptr], @@offset
 
+    ;; adjust the velocities
+    CALL directionNext, [@@entering]
+
+    MOV EBX, [@@portal_ptr]
+    CALL adjustVelocity, EAX, EDX, [EBX + Portal.direction]
+
   RET
 ENDP teleport
+
+PROC adjustVelocity
+  ARG @@x_inc:DWORD, @@y_inc:DWORD, @@direction:DWORD
+  USES EAX, EDX
+  CALL directionNext, [@@direction] ; exit direction
+
+  CMP [@@x_inc], 0
+  JE @@enter_vertically
+    CMP EAX, 0
+    JE @@exit_vertically
+      CMP EAX, [@@x_inc]
+      JE @@return
+        NEG [player.vx]
+        JMP @@return
+      
+    @@exit_vertically:
+      CALL swapVelocity
+      CMP EDX, [@@x_inc]
+      JE @@return
+        NEG [player.vy]
+        JMP @@return
+
+  @@enter_vertically:
+    CMP EDX, 0
+    JE @@exit_horizontally
+      CMP EDX, [@@y_inc]
+      JE @@return
+        NEG [player.vy]
+        JMP @@return
+
+    @@exit_horizontally:
+      CALL swapVelocity
+      CMP EAX, [@@y_inc]
+      JE @@return
+        NEG [player.vx]
+
+  @@return:
+    RET
+ENDP adjustVelocity
+
+PROC swapVelocity
+  PUSH [player.vx]
+  PUSH [player.vy]
+  POP [player.vx]
+  POP [player.vy]
+
+  RET
+ENDP swapVelocity
 
 PROC loadLevel
 	ARG @@fileName:DWORD
