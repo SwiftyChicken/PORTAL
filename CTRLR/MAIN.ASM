@@ -43,17 +43,9 @@ PROC pressHandler
     MOV [player.direction], LEFT
       
     CMP [player.vx], 0
-    JL @@left_frame
+    JL @@return
       SUB [player.vx], 1
-
-    @@left_frame:
-      ; Don't change frame mid air
-      CMP [player.jumping], FALSE
-      JNE @@return
-        ; Update Frame
-        CALL getNextFrame, OFFSET character_L
-        CALL updateFrame, OFFSET character_L
-        RET
+      RET
 
   @@check_right:
 	  CMP	AL, RIGHT_KEY
@@ -61,17 +53,9 @@ PROC pressHandler
       MOV [player.direction], RIGHT
 
       CMP [player.vx], 0
-      JG @@right_frame
+      JG @@return
         ADD [player.vx], 1
-
-      @@right_frame:
-        ; Don't change frame mid air
-        CMP [player.jumping], FALSE
-        JNE @@return
-          ;; Update Frame
-          CALL getNextFrame, OFFSET character_R
-          CALL updateFrame, OFFSET character_R
-          RET
+        RET
 
   @@check_up:
 	  CMP	AL, UP_KEY
@@ -346,7 +330,17 @@ PROC main
     ;;DRAW -> PLAYER ANIMATION + CLONES
     CMP [player.direction], RIGHT
     JE @@right
-      CALL draw, [character_L.image], [player.x], [player.y], TRUE
+      CMP [player.vx], 0
+      JE @@draw_left
+        ; Don't change frame mid air
+        CMP [player.jumping], FALSE
+        JNE @@draw_left
+          ; Update Frame
+          CALL getNextFrame, OFFSET character_L
+          CALL updateFrame, OFFSET character_L
+
+      @@draw_left:
+        CALL draw, [character_L.image], [player.x], [player.y], TRUE
 
       CMP [portal_A.active], TRUE
       JNE @@laser_animation
@@ -358,7 +352,17 @@ PROC main
       JMP @@laser_animation
 
       @@right:
-        CALL draw, [character_R.image], [player.x], [player.y], TRUE
+        CMP [player.vx], 0
+        JE @@draw_right
+          ; Don't change frame mid air
+          CMP [player.jumping], FALSE
+          JNE @@draw_right
+            ;; Update Frame
+            CALL getNextFrame, OFFSET character_R
+            CALL updateFrame, OFFSET character_R
+
+        @@draw_right:
+          CALL draw, [character_R.image], [player.x], [player.y], TRUE
 
         CMP [portal_A.active], TRUE
         JNE @@laser_animation
