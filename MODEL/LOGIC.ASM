@@ -702,7 +702,7 @@ PROC checkPortalCollision
       MOV EAX, EDX
 
       CALL directionNext, EAX         ; EAX -> x+ EDX -> y+
-      CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, EBX
+      CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, EBX, FALSE
       CMP EDX, FALSE
       JNE @@collision
       JMP @@no_collision
@@ -735,13 +735,13 @@ PROC checkInsidePortal
      
     CALL opositeDirection, [portal_A.direction]
     CALL directionNext, EDX
-    CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, OFFSET portal_A
+    CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, OFFSET portal_A, FALSE
     CMP EDX, FALSE
     JNE @@inside
 
     CALL opositeDirection, [portal_B.direction]
     CALL directionNext, EDX
-    CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, OFFSET portal_B
+    CALL checkApproachingPortal, [@@x], [@@y], EAX, EDX, OFFSET portal_B, FALSE
     CMP EDX, FALSE
     JNE @@inside
 
@@ -756,16 +756,23 @@ ENDP checkInsidePortal
 
 ;; If Block center is entering the portal
 ;; -> RETURN: With how much pixel the block is entering in EDX
+;;            With how much pixel the block is shifted from the portal start point in EAX
 ;; -> ELSE RETURN: FALSE
 PROC checkApproachingPortal
-  ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD, @@portal_ptr:DWORD
-  USES EAX, EBX, ECX
+  ARG @@x:DWORD, @@y:DWORD, @@x_inc:DWORD, @@y_inc:DWORD, @@portal_ptr:DWORD, @@shift:DWORD
+  USES EBX, ECX
   
   MOV EBX, [@@portal_ptr]   ; EBX will hold portal ref
   MOV EAX, [@@x_inc]
   CMP EAX, 0                ; If x+ is 0 => horizontal
   JE @@horizontal
    ;@@vertical:
+      ;; Calculate portal shift
+      MOV EAX, [@@y]
+      SUB EAX, BLOCK_SIZE/2
+      SUB EAX, [EBX + Portal.y]
+      MOV [@@shift], EAX
+
       ;; check if y is in effective area
       MOV EAX, BLOCK_SIZE/2       ; EAX will not be used because it's 0
       ADD EAX, [EBX + Portal.y]   ; Calculate start effective area
@@ -792,6 +799,12 @@ PROC checkApproachingPortal
       JMP @@not_approaching
 
     @@horizontal:
+      ;; Calculate portal shift
+      MOV EAX, [@@x]
+      SUB EAX, BLOCK_SIZE/2
+      SUB EAX, [EBX + Portal.x]
+      MOV [@@shift], EAX
+
       ;; check if x is in effective area
       MOV EAX, BLOCK_SIZE/2       ; EAX will not be used because it's 0
       ADD EAX, [EBX + Portal.x]   ; Calculate start effective area
@@ -818,11 +831,13 @@ PROC checkApproachingPortal
       JMP @@not_approaching
          
   @@not_approaching:
+    MOV EAX, FALSE
     MOV EDX, FALSE
     RET
 
   @@approaching:
     ;; return how much is inside the Portal
+    MOV EAX, [@@shift]
     MOV EDX, ECX
     RET
 ENDP checkApproachingPortal
@@ -867,10 +882,10 @@ PROC updateClones
     MOV [@@x_inc], EAX
     MOV [@@y_inc], EDX
 
-    CALL checkApproachingPortal, [@@x], [@@y], [@@x_inc], [@@y_inc], EBX
+    CALL checkApproachingPortal, [@@x], [@@y], [@@x_inc], [@@y_inc], EBX, FALSE
 
     ;; Place Clone based on how far in the player is into the portal
-    CALL updateClonePosition, [@@clone_ptr], [@@portal_ptr], EDX
+    CALL updateClonePosition, [@@clone_ptr], [@@portal_ptr], EDX, EAX
 
     @@continue:
       LOOP @@update
@@ -880,12 +895,10 @@ PROC updateClones
 ENDP updateClones
 
 PROC updateClonePosition
-  ARG @@clone_ptr:DWORD, @@portal_ptr:DWORD, @@offset:DWORD
+  ARG @@clone_ptr:DWORD, @@portal_ptr:DWORD, @@offset:DWORD, @@shift:DWORD
   USES EAX, EBX, EDX
 
-    MOV EBX, PORTAL_SIZE  ; Offset to get clone in center of portal
-    SUB EBX, BLOCK_SIZE
-    SHR EBX, 1
+    MOV EBX, [@@shift]  ; Offset to get clone in center of portal
 
     MOV EAX, [@@portal_ptr]
     CALL directionNext, [EAX +  Portal.direction]
@@ -1214,8 +1227,33 @@ ENDP tryTeleporting
 PROC teleport
   ARG @@portal_ptr:DWORD, @@offset:DWORD, @@entering:DWORD
   USES EAX, EBX, EDX
-    ADD [@@offset], BLOCK_SIZE/2 ; So player don't get stuck in portal
-    CALL updateClonePosition, OFFSET player, [@@portal_ptr], @@offset
+    ;; Calculate portal shift 
+    MOV EBX, [@@portal_ptr]
+    MOV EBX, [EBX + Portal.portal]
+    CMP [@@entering], UP
+      JNE @@check_down
+        @@enter_vertically:
+          ;; Calculate portal shift
+          MOV EAX, [player.x]
+          SUB EAX, [EBX + Portal.x]
+          JMP @@addjust_shift
+
+    @@check_down:
+      CMP [@@entering], DOWN
+      JE @@enter_vertically
+        ;; Calculate portal shift
+        MOV EAX, [player.y]
+        SUB EAX, [EBX + Portal.y]
+        
+
+    @@addjust_shift:
+      CMP EAX, PORTAL_SIZE - BLOCK_SIZE
+      JL @@update_position
+        MOV EAX, PORTAL_SIZE - BLOCK_SIZE - 1
+
+    @@update_position:
+      ADD [@@offset], BLOCK_SIZE/2 ; So player don't get stuck in portal
+      CALL updateClonePosition, OFFSET player, [@@portal_ptr], @@offset, EAX
 
     ;; adjust the velocities
     CALL directionNext, [@@entering]
