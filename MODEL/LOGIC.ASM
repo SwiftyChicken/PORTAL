@@ -55,8 +55,8 @@ PROC tryFitHor
         ADD EBX, PORTAL_SIZE - 1
 
         CALL checkIntersection, [@@x], [@@y], EAX, [@@y], [portal_A.x], [portal_A.y], [portal_A.x], EBX
-        CMP DL, TRUE
-        JNE @@check_fit
+        CMP DL, FALSE
+        JE @@check_fit
           JMP @@failed
 
      @@horizontal_A:
@@ -64,8 +64,8 @@ PROC tryFitHor
         ADD EBX, PORTAL_SIZE - 1
 
         CALL checkIntersection, [@@x], [@@y], EAX, [@@y], [portal_A.x], [portal_A.y], EBX, [portal_A.y]
-        CMP DL, TRUE
-        JNE @@check_fit
+        CMP DL, FALSE
+        JE @@check_fit
           @@failed:
             MOV DL, FALSE
             RET
@@ -129,8 +129,8 @@ PROC tryFitVert
         ADD EBX, PORTAL_SIZE - 1
 
         CALL checkIntersection, [@@x], [@@y], [@@x], EAX, [portal_A.x], [portal_A.y], [portal_A.x], EBX
-        CMP DL, TRUE
-        JNE @@check_fit
+        CMP DL, FALSE
+        JE @@check_fit
           @@failed:
             MOV DL, FALSE
             RET
@@ -140,8 +140,8 @@ PROC tryFitVert
         ADD EBX, PORTAL_SIZE - 1
 
         CALL checkIntersection, [@@x], [@@y], [@@x], EAX, [portal_A.x], [portal_A.y], EBX, [portal_A.y]
-        CMP DL, TRUE
-        JNE @@check_fit
+        CMP DL, FALSE
+        JE @@check_fit
           JMP @@failed
 
     @@check_fit:
@@ -1066,9 +1066,48 @@ PROC checkIntersection
         CMP EAX, TRUE
         JE @@checkHorizontalA
        ;@@check Vertical A:
-          JMP @@no_intersection
+          MOV EAX, [@@A_x0]
+          CMP EAX, [@@B_x0]
+          JL @@no_intersection
+          CMP EAX, [@@B_x1]
+          JG @@no_intersection  ; condition 1: B_x0<=A_x0==A_x1<=B_x1
+
+          MOV EAX, [@@B_y0]
+          CMP EAX, [@@A_y0]
+          JL @@no_intersection
+          CMP EAX, [@@A_y1]
+          JG @@no_intersection  ; condition 2: A_y0<=B_y0==B_y1<=A_y1
+          ;; Calculate how much of A0->A1 goes over B0->B1
+          MOV EDX, [@@B_y1]         ; distance from their intersection to A_y1
+          SUB EDX, [@@A_y1]
+          CMP EDX, 0
+          JGE @@perpendicular
+            NEG EDX                 ; return absolute value
+            JMP @@perpendicular
         @@checkHorizontalA:
-          JMP @@no_intersection
+          MOV EAX, [@@A_y0]
+          CMP EAX, [@@B_y0]
+          JL @@no_intersection
+          CMP EAX, [@@B_y1]
+          JG @@no_intersection  ; condition 1: B_y0<=A_y0==A_y1<=B_y1
+
+          MOV EAX, [@@B_x0]
+          CMP EAX, [@@A_x0]
+          JL @@no_intersection
+          CMP EAX, [@@A_x1]
+          JG @@no_intersection  ; condition 2: A_x0<=B_x0==B_x1<=A_x1
+
+          ;; Calculate how much of A0->A1 goes over B0->B1
+          MOV EDX, [@@B_x1]         ; distance from their intersection to A_x1
+          SUB EDX, [@@A_x1]
+          CMP EDX, 0
+          JGE @@perpendicular
+            NEG EDX                 ; return absolute value
+            JMP @@perpendicular
+
+  @@perpendicular:
+    INC EDX         ; The intersection counts as 1 point
+    RET
 
   @@intersection:
     MOV DL, TRUE
@@ -1081,7 +1120,24 @@ ENDP checkIntersection
 
 PROC tryTeleporting
   ARG @@x1:DWORD, @@y1:DWORD
+  USES EAX, ECX
 
+  ;; Can't teleport if there aren't 2 portals
+  CMP [portal_A.active], TRUE
+  JNE @@failed
+  CMP [portal_B.active], TRUE
+  JNE @@failed
+
+  PUSH OFFSET portal_A
+  PUSH OFFSET portal_B
+
+  MOV ECX, 2
+
+  @@check_portals:
+    POP EAX
+      ;; Do something
+
+    LOOP @@check_portals
 
   @@failed:
     MOV DL, FALSE
