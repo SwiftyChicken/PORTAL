@@ -560,15 +560,19 @@ PROC physicsHandler
       @@move_x:
         MOV [player.x], EAX
       @@dont_move_x:
-        CMP [player.vx], 0
-        JGE @@check_x_right
-          INC [player.vx]
-          JMP @@try_move_y
-        @@check_x_right:
+        CMP [vertical_inc], TRUE   ; Simulate an slowing down of 0.5
+          MOV [vertical_inc], TRUE
+        JNE @@try_move_y
+          MOV [vertical_inc], FALSE
           CMP [player.vx], 0
-          JE @@try_move_y
-            DEC [player.vx]
+          JGE @@check_x_right
+            INC [player.vx]
             JMP @@try_move_y
+          @@check_x_right:
+            CMP [player.vx], 0
+            JE @@try_move_y
+              DEC [player.vx]
+              JMP @@try_move_y
     
     @@slow_down_x:
       CMP [player.vx], 0
@@ -1289,7 +1293,9 @@ DATASEG
   clone_A   Player  <0, 0>
   clone_B   Player  <0, 0>
 
-  gravity_inc DB FALSE ; Simulate gravity of 0.5
+  ; Simulate increase of 0.5
+  gravity_inc DB FALSE 
+  vertical_inc DB FALSE 
 ;-----------------------------------------------------------
 ; UNINITIALISED DATA
 ;-----------------------------------------------------------
