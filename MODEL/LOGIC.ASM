@@ -1292,7 +1292,7 @@ DATASEG
 
   laser     Laser   <>
 
-  player    Player  <40, 20>
+  player    Player  <0, FLOOR>
   clone_A   Player  <0, 0>
   clone_B   Player  <0, 0>
 
