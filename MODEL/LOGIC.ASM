@@ -526,34 +526,60 @@ PROC swapPortals
     RET
 ENDP swapPortals
 
+PROC half_EAX
+  CMP EAX, 0
+  JGE @@positive
+    SAR EAX, 1
+    RET
+
+  @@positive:
+    NEG EAX
+    SAR EAX, 1
+    NEG EAX
+    RET
+ENDP half_EAX
+
 PROC physicsHandler
   USES EAX, EBX, EDX
 
-  MOV EAX, [player.vx]
-  SAR EAX, SLOW_DOWN      ; Slow down horizontal movement
-  ADD EAX, [player.x]
+  @@try_move_x:
 
-  CALL checkPlayerCollision, EAX, [player.y]
-  CMP DL, PORTAL
-  JE @@move_x
+    MOV EAX, [player.vx]
+    CALL half_EAX
+    ADD EAX, [player.x]
 
-  CMP DL, EMPTY
-  JNE @@dont_move_x
-    @@move_x:
-      MOV [player.x], EAX
-    @@dont_move_x:
-      CMP [player.vx], 0
-      JGE @@check_x_right
-        ADD [player.vx], 2
-        JMP @@try_move_y
-      @@check_x_right:
+    CALL checkPlayerCollision, EAX, [player.y]
+    CMP DL, PORTAL
+    JE @@move_x
+
+    CMP DL, EMPTY
+    JNE @@slow_down_x
+      @@move_x:
+        MOV [player.x], EAX
+      @@dont_move_x:
         CMP [player.vx], 0
-        JE @@try_move_y
-          SUB [player.vx], 2
-  
+        JGE @@check_x_right
+          INC [player.vx]
+          JMP @@try_move_y
+        @@check_x_right:
+          CMP [player.vx], 0
+          JE @@try_move_y
+            DEC [player.vx]
+            JMP @@try_move_y
+    
+    @@slow_down_x:
+      CMP [player.vx], 0
+      JG @@slow_right
+        INC [player.vx]
+        JMP @@try_move_x
+
+      @@slow_right:
+        DEC [player.vx]
+        JMP @@try_move_x
+
   @@try_move_y:
     MOV EAX, [player.vy]
-    SAR EAX, SLOW_DOWN      ; Slown down vertical movement
+    CALL half_EAX
     ADD EAX, [player.y]
 
     CALL checkPlayerCollision, [player.x], EAX
@@ -571,28 +597,28 @@ PROC physicsHandler
           JGE @@return
             INC [player.vy]
             JMP @@return
-  @@slow_down_y:
-    CMP [player.vy], 0
-    JL @@slow_up
-    CMP [player.vy], 0
-    JG @@slow_down
-    
-    @@slow_up:
-      INC [player.vy]
-      JMP @@try_move_y
+    @@slow_down_y:
+      CMP [player.vy], 0
+      JL @@slow_up
+      CMP [player.vy], 0
+      JG @@slow_down
+      
+      @@slow_up:
+        INC [player.vy]
+        JMP @@try_move_y
 
-    @@slow_down:
-      DEC [player.vy]
-      MOV EAX, [player.vy]
-      SAR EAX, SLOW_DOWN
-      CMP EAX, 0  ;IF y velocity 0 it has hit the ground
-      JE @@dont_move_y
-      JMP @@try_move_y
+      @@slow_down:
+        DEC [player.vy]
+        MOV EAX, [player.vy]
+        CALL half_EAX
+        CMP EAX, 0  ;IF y velocity 0 it has hit the ground
+        JE @@dont_move_y
+        JMP @@try_move_y
 
-  @@dont_move_y:
-    MOV [player.vy], 1
-    MOV [gravity_inc], FALSE ; reset gravity_inc
-    MOV [player.jumping], FALSE
+    @@dont_move_y:
+      MOV [player.vy], 1
+      MOV [gravity_inc], FALSE ; reset gravity_inc
+      MOV [player.jumping], FALSE
 
   @@return:
     CALL updateClones, FALSE, FALSE, FALSE, FALSE, FALSE
