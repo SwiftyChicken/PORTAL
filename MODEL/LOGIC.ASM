@@ -1223,6 +1223,7 @@ PROC teleport
     MOV EBX, [@@portal_ptr]
     CALL adjustVelocity, EAX, EDX, [EBX + Portal.direction]
 
+    MOV [player.jumping], TRUE ; assume you're mid air when teleporting
   RET
 ENDP teleport
 
