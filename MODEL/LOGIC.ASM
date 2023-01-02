@@ -543,10 +543,13 @@ PROC physicsHandler
   USES EAX, EBX, EDX
 
   @@try_move_x:
-
     MOV EAX, [player.vx]
     CALL half_EAX
     ADD EAX, [player.x]
+
+    CALL tryTeleporting, EAX, [player.y]
+    CMP DL, TRUE
+    JE @@try_move_y
 
     CALL checkPlayerCollision, EAX, [player.y]
     CMP DL, PORTAL
@@ -582,6 +585,10 @@ PROC physicsHandler
     CALL half_EAX
     ADD EAX, [player.y]
 
+    CALL tryTeleporting, [player.x], EAX
+    CMP DL, TRUE
+    JE @@return
+    
     CALL checkPlayerCollision, [player.x], EAX
     CMP DL, PORTAL
     JE @@move_y
@@ -1056,7 +1063,12 @@ PROC checkIntersection
             JMP @@no_intersection
 
       @@checkPerpendicular:
-        JMP @@no_intersection
+        CMP EAX, TRUE
+        JE @@checkHorizontalA
+       ;@@check Vertical A:
+          JMP @@no_intersection
+        @@checkHorizontalA:
+          JMP @@no_intersection
 
   @@intersection:
     MOV DL, TRUE
@@ -1067,6 +1079,14 @@ PROC checkIntersection
     RET
 ENDP checkIntersection
 
+PROC tryTeleporting
+  ARG @@x1:DWORD, @@y1:DWORD
+
+
+  @@failed:
+    MOV DL, FALSE
+    RET
+ENDP tryTeleporting
 PROC loadLevel
 	ARG @@fileName:DWORD
 	CALL loadFile, [@@fileName], OFFSET level, LEVEL_SIZE
