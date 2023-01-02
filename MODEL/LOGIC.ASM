@@ -1152,9 +1152,9 @@ PROC tryTeleporting
 
   ;; Can't teleport if there aren't 2 portals
   CMP [portal_A.active], TRUE
-  JNE @@failed
+  JNE @@return
   CMP [portal_B.active], TRUE
-  JNE @@failed
+  JNE @@return
 
   LEA EAX, [@@x0]
   LEA EBX, [@@y0]
@@ -1194,12 +1194,24 @@ PROC tryTeleporting
       @@check_result:
         CMP EDX, FALSE
         JE @@next
+          ;; Teleport player to other portal
+          CALL teleport, [EBX + Portal.portal], EDX
+          MOV DL, TRUE
     @@next:
       LOOP @@check_portals
 
-  @@failed:
+  @@return:
     RET
 ENDP tryTeleporting
+
+PROC teleport
+  ARG @@portal_ptr:DWORD, @@offset:DWORD
+  USES EAX, EBX, ECX, EDX
+    ADD [@@offset], BLOCK_SIZE/2
+    CALL updateClonePosition, OFFSET player, [@@portal_ptr], @@offset
+
+  RET
+ENDP teleport
 
 PROC loadLevel
 	ARG @@fileName:DWORD
