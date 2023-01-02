@@ -27,6 +27,7 @@ x86 assembly remake of Portal Prelude on the TI-84
     - Check TI 84 behaviour
     
 - [ ] LOGIC.ASM: Teleportation logic
-    - [ ] being able to enter half the portal -> teleport half in the other portal
-    - [ ] add clone that move based on how much of the player is in the portal
-    - [ ] clone management
+    - [X] being able to enter half the portal -> teleport half in the other portal
+    - [X] add clone that move based on how much of the player is in the portal
+    - [X] clone management
+    - [ ] effectively teleport the player...

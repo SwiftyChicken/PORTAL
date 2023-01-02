@@ -55,8 +55,8 @@ PROC tryFitHor
         ADD EBX, PORTAL_SIZE - 1
 
         CALL checkIntersection, [@@x], [@@y], EAX, [@@y], [portal_A.x], [portal_A.y], [portal_A.x], EBX
-        CMP DL, TRUE
-        JNE @@check_fit
+        CMP DL, FALSE
+        JE @@check_fit
           JMP @@failed
 
      @@horizontal_A:
@@ -64,8 +64,8 @@ PROC tryFitHor
         ADD EBX, PORTAL_SIZE - 1
 
         CALL checkIntersection, [@@x], [@@y], EAX, [@@y], [portal_A.x], [portal_A.y], EBX, [portal_A.y]
-        CMP DL, TRUE
-        JNE @@check_fit
+        CMP DL, FALSE
+        JE @@check_fit
           @@failed:
             MOV DL, FALSE
             RET
@@ -129,8 +129,8 @@ PROC tryFitVert
         ADD EBX, PORTAL_SIZE - 1
 
         CALL checkIntersection, [@@x], [@@y], [@@x], EAX, [portal_A.x], [portal_A.y], [portal_A.x], EBX
-        CMP DL, TRUE
-        JNE @@check_fit
+        CMP DL, FALSE
+        JE @@check_fit
           @@failed:
             MOV DL, FALSE
             RET
@@ -140,8 +140,8 @@ PROC tryFitVert
         ADD EBX, PORTAL_SIZE - 1
 
         CALL checkIntersection, [@@x], [@@y], [@@x], EAX, [portal_A.x], [portal_A.y], EBX, [portal_A.y]
-        CMP DL, TRUE
-        JNE @@check_fit
+        CMP DL, FALSE
+        JE @@check_fit
           JMP @@failed
 
     @@check_fit:
@@ -526,31 +526,73 @@ PROC swapPortals
     RET
 ENDP swapPortals
 
+PROC half_EAX
+  CMP EAX, 0
+  JGE @@positive
+    SAR EAX, 1
+    RET
+
+  @@positive:
+    NEG EAX
+    SAR EAX, 1
+    NEG EAX
+    RET
+ENDP half_EAX
+
 PROC physicsHandler
   USES EAX, EBX, EDX
 
-  MOV EAX, [player.vx]
-  ADD EAX, [player.x]
+  @@try_move_x:
+    MOV EAX, [player.vx]
+    CALL half_EAX
+    ADD EAX, [player.x]
 
-  CALL checkPlayerCollision, EAX, [player.y]
-  CMP DL, PORTAL
-  JE @@move_x
+    CALL tryTeleporting, [player.x], [player.y], EAX, [player.y]
+    CMP DL, FALSE
+    JNE @@return
 
-  CMP DL, EMPTY
-  JNE @@dont_move_x
-    @@move_x:
-      MOV [player.x], EAX
-    @@dont_move_x:
-      MOV [player.vx], 0
-  
+    CALL checkPlayerCollision, EAX, [player.y]
+    CMP DL, PORTAL
+    JE @@move_x
+
+    CMP DL, EMPTY
+    JNE @@slow_down_x
+      @@move_x:
+        MOV [player.x], EAX
+      @@dont_move_x:
+        CMP [player.vx], 0
+        JGE @@check_x_right
+          INC [player.vx]
+          JMP @@try_move_y
+        @@check_x_right:
+          CMP [player.vx], 0
+          JE @@try_move_y
+            DEC [player.vx]
+            JMP @@try_move_y
+    
+    @@slow_down_x:
+      CMP [player.vx], 0
+      JG @@slow_right
+        INC [player.vx]
+        JMP @@try_move_x
+
+      @@slow_right:
+        DEC [player.vx]
+        JMP @@try_move_x
+
   @@try_move_y:
     MOV EAX, [player.vy]
-    SAR EAX, SLOW_DOWN      ; Slown down vertical movement
+    CALL half_EAX
     ADD EAX, [player.y]
 
+    CALL tryTeleporting, [player.x], [player.y], [player.x], EAX
+    CMP DL, FALSE
+    JNE @@return
+    
     CALL checkPlayerCollision, [player.x], EAX
     CMP DL, PORTAL
     JE @@move_y
+
     CMP DL, EMPTY
     JNE @@slow_down_y
       @@move_y:
@@ -563,28 +605,28 @@ PROC physicsHandler
           JGE @@return
             INC [player.vy]
             JMP @@return
-  @@slow_down_y:
-    CMP [player.vy], 0
-    JL @@slow_up
-    CMP [player.vy], 0
-    JG @@slow_down
-    
-    @@slow_up:
-      INC [player.vy]
-      JMP @@try_move_y
+    @@slow_down_y:
+      CMP [player.vy], 0
+      JL @@slow_up
+      CMP [player.vy], 0
+      JG @@slow_down
+      
+      @@slow_up:
+        INC [player.vy]
+        JMP @@try_move_y
 
-    @@slow_down:
-      DEC [player.vy]
-      MOV EAX, [player.vy]
-      SAR EAX, SLOW_DOWN
-      CMP EAX, 0  ;IF y velocity 0 it has hit the ground
-      JE @@dont_move_y
-      JMP @@try_move_y
+      @@slow_down:
+        DEC [player.vy]
+        MOV EAX, [player.vy]
+        CALL half_EAX
+        CMP EAX, 0  ;IF y velocity 0 it has hit the ground
+        JE @@dont_move_y
+        JMP @@try_move_y
 
-  @@dont_move_y:
-    MOV [player.vy], 1
-    MOV [gravity_inc], FALSE ; reset gravity_inc
-    MOV [player.jumping], FALSE
+    @@dont_move_y:
+      MOV [player.vy], 1
+      MOV [gravity_inc], FALSE ; reset gravity_inc
+      MOV [player.jumping], FALSE
 
   @@return:
     CALL updateClones, FALSE, FALSE, FALSE, FALSE, FALSE
@@ -1022,22 +1064,217 @@ PROC checkIntersection
             JMP @@no_intersection
 
       @@checkPerpendicular:
-        JMP @@no_intersection
+        CMP EAX, TRUE
+        JE @@checkHorizontalA
+       ;@@check Vertical A:
+          MOV EAX, [@@A_x0]
+          CMP EAX, [@@B_x0]
+          JL @@no_intersection
+          CMP EAX, [@@B_x1]
+          JG @@no_intersection  ; condition 1: B_x0<=A_x0==A_x1<=B_x1
+
+          MOV EAX, [@@A_y0]
+          CMP EAX, [@@A_y1]
+          JG  @@per_vert_situation2
+            MOV EAX, [@@B_y0]
+            CMP EAX, [@@A_y0]
+            JL @@no_intersection
+            CMP EAX, [@@A_y1]
+            JG @@no_intersection  ; condition 2 - situation 1: A_y0<=B_y0==B_y1<=A_y1
+              JMP @@calculate_per_vert
+
+          @@per_vert_situation2:
+            MOV EAX, [@@B_y0]
+            CMP EAX, [@@A_y1]
+            JL @@no_intersection
+            CMP EAX, [@@A_y0]
+            JG @@no_intersection  ; condition 2 - situation 2: A_y1<=B_y0==B_y1<=A_y0
+
+          ;; Calculate how much of A0->A1 goes over B0->B1
+          @@calculate_per_vert:
+            MOV EDX, [@@B_y1]         ; distance from their intersection to A_y1
+            SUB EDX, [@@A_y1]
+            CMP EDX, 0
+            JG @@perpendicular
+              NEG EDX                 ; return absolute value
+              JMP @@perpendicular
+
+        @@checkHorizontalA:
+          MOV EAX, [@@A_y0]
+          CMP EAX, [@@B_y0]
+          JL @@no_intersection
+          CMP EAX, [@@B_y1]
+          JG @@no_intersection  ; condition 1: B_y0<=A_y0==A_y1<=B_y1
+
+          MOV EAX, [@@A_x0]
+          CMP EAX, [@@A_x1]
+          JG @@per_hor_situation2
+            MOV EAX, [@@B_x0]
+            CMP EAX, [@@A_x0]
+            JL @@no_intersection
+            CMP EAX, [@@A_x1]
+            JG @@no_intersection  ; situation 1 - condition 2: A_x0<=B_x0==B_x1<=A_x1
+              JMP @@calculate_per_hor
+            
+          @@per_hor_situation2:
+            MOV EAX, [@@B_x0]
+            CMP EAX, [@@A_x1]
+            JL @@no_intersection
+            CMP EAX, [@@A_x0]
+            JG @@no_intersection  ; situation 2 - condition 2: A_x1<=B_x0==B_x1<=A_x0
+
+          ;; Calculate how much of A0->A1 goes over B0->B1
+          @@calculate_per_hor:
+            MOV EDX, [@@B_x1]         ; distance from their intersection to A_x1
+            SUB EDX, [@@A_x1]
+            CMP EDX, 0
+            JGE @@perpendicular
+              NEG EDX                 ; return absolute value
+              JMP @@perpendicular
+
+  @@perpendicular:
+    INC EDX         ; The intersection counts as 1 point
+    RET
 
   @@intersection:
-    MOV DL, TRUE
+    MOV EDX, TRUE
     RET
 
   @@no_intersection:
-    MOV DL, FALSE
+    MOV EDX, FALSE
     RET
 ENDP checkIntersection
+
+PROC tryTeleporting
+  ARG @@x0:DWORD, @@y0:DWORD, @@x1:DWORD, @@y1:DWORD
+  USES EAX, EBX, ECX
+
+  MOV EDX, FALSE
+
+  ;; Can't teleport if there aren't 2 portals
+  CMP [portal_A.active], TRUE
+  JNE @@return
+  CMP [portal_B.active], TRUE
+  JNE @@return
+
+  LEA EAX, [@@x0]
+  LEA EBX, [@@y0]
+  CALL centerPostion, EAX, EBX
+
+  LEA EAX, [@@x1]
+  LEA EBX, [@@y1]
+  CALL centerPostion, EAX, EBX
+
+  PUSH OFFSET portal_A
+  PUSH OFFSET portal_B
+
+  MOV ECX, 2
+
+  @@check_portals:
+    POP EBX             ; portal_ptr in EBX
+    CMP EDX, FALSE
+    JNE @@next          ; Finish loop to restore stack
+      CMP [EBX + Portal.direction], UP
+      JNE @@check_down
+        @@horizontal:
+          MOV EAX, [EBX + Portal.x]
+          ADD EAX, PORTAL_SIZE
+
+          CALL checkIntersection, [@@x0], [@@y0], [@@x1], [@@y1], [EBX + Portal.x], [EBX + Portal.y], EAX, [EBX + Portal.y]
+
+          JMP @@check_result
+
+      @@check_down:
+        CMP [EBX + Portal.direction] , DOWN
+        JE @@horizontal
+          MOV EAX, [EBX + Portal.y]
+          ADD EAX, PORTAL_SIZE
+
+          CALL checkIntersection, [@@x0], [@@y0], [@@x1], [@@y1], [EBX + Portal.x], [EBX + Portal.y], [EBX + Portal.x], EAX
+
+      @@check_result:
+        CMP EDX, FALSE
+        JE @@next
+          ;; Teleport player to other portal
+          MOV EAX, EDX
+          CALL opositeDirection, [EBX + Portal.direction]
+          CALL teleport, [EBX + Portal.portal], EAX, EDX
+          MOV DL, TRUE
+    @@next:
+      LOOP @@check_portals
+
+  @@return:
+    RET
+ENDP tryTeleporting
+
+PROC teleport
+  ARG @@portal_ptr:DWORD, @@offset:DWORD, @@entering:DWORD
+  USES EAX, EBX, EDX
+    ADD [@@offset], BLOCK_SIZE/2 ; So player don't get stuck in portal
+    CALL updateClonePosition, OFFSET player, [@@portal_ptr], @@offset
+
+    ;; adjust the velocities
+    CALL directionNext, [@@entering]
+
+    MOV EBX, [@@portal_ptr]
+    CALL adjustVelocity, EAX, EDX, [EBX + Portal.direction]
+
+  RET
+ENDP teleport
+
+PROC adjustVelocity
+  ARG @@x_inc:DWORD, @@y_inc:DWORD, @@direction:DWORD
+  USES EAX, EDX
+  CALL directionNext, [@@direction] ; exit direction
+
+  CMP [@@x_inc], 0
+  JE @@enter_vertically
+    CMP EAX, 0
+    JE @@exit_vertically
+      CMP EAX, [@@x_inc]
+      JE @@return
+        NEG [player.vx]
+        JMP @@return
+      
+    @@exit_vertically:
+      CALL swapVelocity
+      CMP EDX, [@@x_inc]
+      JE @@return
+        NEG [player.vy]
+        JMP @@return
+
+  @@enter_vertically:
+    CMP EDX, 0
+    JE @@exit_horizontally
+      CMP EDX, [@@y_inc]
+      JE @@return
+        NEG [player.vy]
+        JMP @@return
+
+    @@exit_horizontally:
+      CALL swapVelocity
+      CMP EAX, [@@y_inc]
+      JE @@return
+        NEG [player.vx]
+
+  @@return:
+    RET
+ENDP adjustVelocity
+
+PROC swapVelocity
+  PUSH [player.vx]
+  PUSH [player.vy]
+  POP [player.vx]
+  POP [player.vy]
+
+  RET
+ENDP swapVelocity
 
 PROC loadLevel
 	ARG @@fileName:DWORD
 	CALL loadFile, [@@fileName], OFFSET level, LEVEL_SIZE
 	RET
-ENDP
+ENDP loadLevel
 
 ;-----------------------------------------------------------
 ; DATA
