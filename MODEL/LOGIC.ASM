@@ -547,9 +547,9 @@ PROC physicsHandler
     CALL half_EAX
     ADD EAX, [player.x]
 
-    CALL tryTeleporting, EAX, [player.y]
-    CMP DL, TRUE
-    JE @@try_move_y
+    CALL tryTeleporting, [player.x], [player.y], EAX, [player.y]
+    CMP DL, FALSE
+    JNE @@try_move_y
 
     CALL checkPlayerCollision, EAX, [player.y]
     CMP DL, PORTAL
@@ -585,9 +585,9 @@ PROC physicsHandler
     CALL half_EAX
     ADD EAX, [player.y]
 
-    CALL tryTeleporting, [player.x], EAX
-    CMP DL, TRUE
-    JE @@return
+    CALL tryTeleporting, [player.x], [player.y], [player.x], EAX
+    CMP DL, FALSE
+    JNE @@return
     
     CALL checkPlayerCollision, [player.x], EAX
     CMP DL, PORTAL
@@ -1072,18 +1072,32 @@ PROC checkIntersection
           CMP EAX, [@@B_x1]
           JG @@no_intersection  ; condition 1: B_x0<=A_x0==A_x1<=B_x1
 
-          MOV EAX, [@@B_y0]
-          CMP EAX, [@@A_y0]
-          JL @@no_intersection
+          MOV EAX, [@@A_y0]
           CMP EAX, [@@A_y1]
-          JG @@no_intersection  ; condition 2: A_y0<=B_y0==B_y1<=A_y1
+          JG  @@per_vert_situation2
+            MOV EAX, [@@B_y0]
+            CMP EAX, [@@A_y0]
+            JL @@no_intersection
+            CMP EAX, [@@A_y1]
+            JG @@no_intersection  ; condition 2 - situation 1: A_y0<=B_y0==B_y1<=A_y1
+              JMP @@calculate_per_vert
+
+          @@per_vert_situation2:
+            MOV EAX, [@@B_y0]
+            CMP EAX, [@@A_y1]
+            JL @@no_intersection
+            CMP EAX, [@@A_y0]
+            JG @@no_intersection  ; condition 2 - situation 2: A_y1<=B_y0==B_y1<=A_y0
+
           ;; Calculate how much of A0->A1 goes over B0->B1
-          MOV EDX, [@@B_y1]         ; distance from their intersection to A_y1
-          SUB EDX, [@@A_y1]
-          CMP EDX, 0
-          JGE @@perpendicular
-            NEG EDX                 ; return absolute value
-            JMP @@perpendicular
+          @@calculate_per_vert:
+            MOV EDX, [@@B_y1]         ; distance from their intersection to A_y1
+            SUB EDX, [@@A_y1]
+            CMP EDX, 0
+            JG @@perpendicular
+              NEG EDX                 ; return absolute value
+              JMP @@perpendicular
+
         @@checkHorizontalA:
           MOV EAX, [@@A_y0]
           CMP EAX, [@@B_y0]
@@ -1091,36 +1105,50 @@ PROC checkIntersection
           CMP EAX, [@@B_y1]
           JG @@no_intersection  ; condition 1: B_y0<=A_y0==A_y1<=B_y1
 
-          MOV EAX, [@@B_x0]
-          CMP EAX, [@@A_x0]
-          JL @@no_intersection
+          MOV EAX, [@@A_x0]
           CMP EAX, [@@A_x1]
-          JG @@no_intersection  ; condition 2: A_x0<=B_x0==B_x1<=A_x1
+          JG @@per_hor_situation2
+            MOV EAX, [@@B_x0]
+            CMP EAX, [@@A_x0]
+            JL @@no_intersection
+            CMP EAX, [@@A_x1]
+            JG @@no_intersection  ; situation 1 - condition 2: A_x0<=B_x0==B_x1<=A_x1
+              JMP @@calculate_per_hor
+            
+          @@per_hor_situation2:
+            MOV EAX, [@@B_x0]
+            CMP EAX, [@@A_x1]
+            JL @@no_intersection
+            CMP EAX, [@@A_x0]
+            JG @@no_intersection  ; situation 2 - condition 2: A_x1<=B_x0==B_x1<=A_x0
 
           ;; Calculate how much of A0->A1 goes over B0->B1
-          MOV EDX, [@@B_x1]         ; distance from their intersection to A_x1
-          SUB EDX, [@@A_x1]
-          CMP EDX, 0
-          JGE @@perpendicular
-            NEG EDX                 ; return absolute value
-            JMP @@perpendicular
+          @@calculate_per_hor:
+            MOV EDX, [@@B_x1]         ; distance from their intersection to A_x1
+            SUB EDX, [@@A_x1]
+            CMP EDX, 0
+            JGE @@perpendicular
+              NEG EDX                 ; return absolute value
+              JMP @@perpendicular
 
   @@perpendicular:
     INC EDX         ; The intersection counts as 1 point
     RET
 
   @@intersection:
-    MOV DL, TRUE
+    MOV EDX, TRUE
     RET
 
   @@no_intersection:
-    MOV DL, FALSE
+    MOV EDX, FALSE
     RET
 ENDP checkIntersection
 
 PROC tryTeleporting
-  ARG @@x1:DWORD, @@y1:DWORD
-  USES EAX, ECX
+  ARG @@x0:DWORD, @@y0:DWORD, @@x1:DWORD, @@y1:DWORD
+  USES EAX, EBX, ECX
+
+  MOV EDX, FALSE
 
   ;; Can't teleport if there aren't 2 portals
   CMP [portal_A.active], TRUE
@@ -1128,26 +1156,56 @@ PROC tryTeleporting
   CMP [portal_B.active], TRUE
   JNE @@failed
 
+  LEA EAX, [@@x0]
+  LEA EBX, [@@y0]
+  CALL centerPostion, EAX, EBX
+
+  LEA EAX, [@@x1]
+  LEA EBX, [@@y1]
+  CALL centerPostion, EAX, EBX
+
   PUSH OFFSET portal_A
   PUSH OFFSET portal_B
 
   MOV ECX, 2
 
   @@check_portals:
-    POP EAX
-      ;; Do something
+    POP EBX             ; portal_ptr in EBX
+    CMP EDX, FALSE
+    JNE @@next          ; Finish loop to restore stack
+      CMP [EBX + Portal.direction], UP
+      JNE @@check_down
+        @@horizontal:
+          MOV EAX, [EBX + Portal.x]
+          ADD EAX, PORTAL_SIZE
 
-    LOOP @@check_portals
+          CALL checkIntersection, [@@x0], [@@y0], [@@x1], [@@y1], [EBX + Portal.x], [EBX + Portal.y], EAX, [EBX + Portal.y]
+
+          JMP @@check_result
+
+      @@check_down:
+        CMP [EBX + Portal.direction] , DOWN
+        JE @@horizontal
+          MOV EAX, [EBX + Portal.y]
+          ADD EAX, PORTAL_SIZE
+
+          CALL checkIntersection, [@@x0], [@@y0], [@@x1], [@@y1], [EBX + Portal.x], [EBX + Portal.y], [EBX + Portal.x], EAX
+
+      @@check_result:
+        CMP EDX, FALSE
+        JE @@next
+    @@next:
+      LOOP @@check_portals
 
   @@failed:
-    MOV DL, FALSE
     RET
 ENDP tryTeleporting
+
 PROC loadLevel
 	ARG @@fileName:DWORD
 	CALL loadFile, [@@fileName], OFFSET level, LEVEL_SIZE
 	RET
-ENDP
+ENDP loadLevel
 
 ;-----------------------------------------------------------
 ; DATA
