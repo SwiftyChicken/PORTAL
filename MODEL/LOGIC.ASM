@@ -1197,7 +1197,7 @@ PROC tryTeleporting
           MOV EAX, [EBX + Portal.x]
           ADD EAX, PORTAL_SIZE
 
-          CALL checkIntersection, [@@x0], [@@y0], [@@x1], [@@y1], [EBX + Portal.x], [EBX + Portal.y], EAX, [EBX + Portal.y]
+          CALL checkPlayerIntersection, [@@x0], [@@y0], [@@x1], [@@y1], [EBX + Portal.x], [EBX + Portal.y], EAX, [EBX + Portal.y]
 
           JMP @@check_result
 
@@ -1207,7 +1207,7 @@ PROC tryTeleporting
           MOV EAX, [EBX + Portal.y]
           ADD EAX, PORTAL_SIZE
 
-          CALL checkIntersection, [@@x0], [@@y0], [@@x1], [@@y1], [EBX + Portal.x], [EBX + Portal.y], [EBX + Portal.x], EAX
+          CALL checkPlayerIntersection, [@@x0], [@@y0], [@@x1], [@@y1], [EBX + Portal.x], [EBX + Portal.y], [EBX + Portal.x], EAX
 
       @@check_result:
         CMP EDX, FALSE
@@ -1223,6 +1223,26 @@ PROC tryTeleporting
   @@return:
     RET
 ENDP tryTeleporting
+
+PROC checkPlayerIntersection
+  ARG @@PLR_x0:DWORD, @@PLR_y0:DWORD, @@PLR_x1:DWORD, @@PLR_y1:DWORD, @@PRT_x0:DWORD, @@PRT_y0:DWORD, @@PRT_x1:DWORD, @@PRT_y1:DWORD
+  USES EAX
+    MOV EAX, [@@PRT_x0]
+    CMP EAX, [@@PRT_x1]
+    JE @@vertical
+      ADD [@@PRT_x0], BLOCK_SIZE/2
+      SUB [@@PRT_x1], BLOCK_SIZE/2
+      JMP @@apply
+
+    @@vertical:
+      ADD [@@PRT_y0], BLOCK_SIZE/2
+      SUB [@@PRT_y1], BLOCK_SIZE/2
+
+    @@apply:
+
+      CALL checkIntersection, [@@PLR_x0], [@@PLR_y0], [@@PLR_x1], [@@PLR_y1], [@@PRT_x0], [@@PRT_y0], [@@PRT_x1], [@@PRT_y1]
+      RET
+ENDP checkPlayerIntersection
 
 PROC teleport
   ARG @@portal_ptr:DWORD, @@offset:DWORD, @@entering:DWORD
