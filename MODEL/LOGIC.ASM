@@ -1231,12 +1231,12 @@ PROC checkPlayerIntersection
     CMP EAX, [@@PRT_x1]
     JE @@vertical
       ADD [@@PRT_x0], BLOCK_SIZE/2
-      SUB [@@PRT_x1], BLOCK_SIZE/2
+      SUB [@@PRT_x1], BLOCK_SIZE/2 + 1
       JMP @@apply
 
     @@vertical:
       ADD [@@PRT_y0], BLOCK_SIZE/2
-      SUB [@@PRT_y1], BLOCK_SIZE/2
+      SUB [@@PRT_y1], BLOCK_SIZE/2 + 1
 
     @@apply:
 
@@ -1256,7 +1256,7 @@ PROC teleport
           ;; Calculate portal shift
           MOV EAX, [player.x]
           SUB EAX, [EBX + Portal.x]
-          JMP @@addjust_shift
+          JMP @@update_position
 
     @@check_down:
       CMP [@@entering], DOWN
@@ -1264,12 +1264,6 @@ PROC teleport
         ;; Calculate portal shift
         MOV EAX, [player.y]
         SUB EAX, [EBX + Portal.y]
-        
-
-    @@addjust_shift:
-      CMP EAX, PORTAL_SIZE - BLOCK_SIZE
-      JL @@update_position
-        MOV EAX, PORTAL_SIZE - BLOCK_SIZE - 1
 
     @@update_position:
       ADD [@@offset], BLOCK_SIZE/2 ; So player don't get stuck in portal
