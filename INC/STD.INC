@@ -8,6 +8,14 @@
 TRUE  EQU 1
 FALSE EQU 0
 
+;         0
+;   7 ___ | ___ 1
+;        \|/    
+; 6 ----- O ----- 2
+;        /|\     
+;   5 __/ | \__ 3
+;         4
+
 UP          EQU 0
 UP_RIGHT    EQU 1
 RIGHT       EQU 2
@@ -17,11 +25,11 @@ DOWN_LEFT   EQU 5
 LEFT        EQU 6
 UP_LEFT     EQU 7
 
-POS_DOWN  EQU 1
-POS_UP    EQU -1
-POS_RIGHT EQU 1
-POS_LEFT  EQU -1
-POS_SAME  EQU 0
+MOV_DOWN  EQU 1
+MOV_UP    EQU -1
+MOV_RIGHT EQU 1
+MOV_LEFT  EQU -1
+MOV_NONE  EQU 0
 ;-----------------------------------------------------------
 ; EXPORT
 ;-----------------------------------------------------------
