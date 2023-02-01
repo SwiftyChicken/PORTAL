@@ -380,7 +380,7 @@ PROC createPortal
   CMP [@@direction], UP_RIGHT
   JNE @@check_up_left
     ; Check Block under it
-    MOV EBX, POS_DOWN ; y+ := POS_UP -> POS_DOWN
+    MOV EBX, MOV_DOWN ; y+ := MOV_UP -> MOV_DOWN
     ADD EBX, [@@y0]   ; y of block under
     ADD EAX, [@@x0]   ; x of block under
     CALL checkCollision, EAX, EBX 
@@ -392,7 +392,7 @@ PROC createPortal
     CMP [@@direction], UP_LEFT
     JNE @@check_down_right
       ; Check Block under it
-      MOV EBX, POS_DOWN ; y+ := POS_UP -> POS_DOWN
+      MOV EBX, MOV_DOWN ; y+ := MOV_UP -> MOV_DOWN
       ADD EBX, [@@y0]   ; y of block under
       ADD EAX, [@@x0]   ; x of block under
       CALL checkCollision, EAX, EBX 
@@ -404,7 +404,7 @@ PROC createPortal
     CMP [@@direction], DOWN_RIGHT
     JNE @@check_down_left
       ; Check Block under it
-      MOV EBX, POS_UP   ; y+ := POS_UP -> POS_DOWN
+      MOV EBX, MOV_UP   ; y+ := MOV_UP -> MOV_DOWN
       ADD EBX, [@@y0]   ; y of block under
       ADD EAX, [@@x0]   ; x of block under
       CALL checkCollision, EAX, EBX 
@@ -416,7 +416,7 @@ PROC createPortal
     CMP [@@direction], DOWN_LEFT
     JNE @@not_slanting
       ; Check Block under it
-      MOV EBX, POS_UP   ; y+ := POS_UP -> POS_DOWN
+      MOV EBX, MOV_UP   ; y+ := MOV_UP -> MOV_DOWN
       ADD EBX, [@@y0]   ; y of block under
       ADD EAX, [@@x0]   ; x of block under
       CALL checkCollision, EAX, EBX 

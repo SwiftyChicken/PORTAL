@@ -33,99 +33,59 @@ PROC directionNext
   JE @@up_left
 
   @@up:
-    MOV EAX, POS_SAME
-    MOV EDX, POS_UP
+    MOV EAX, MOV_NONE
+    MOV EDX, MOV_UP
     RET
 
   @@up_right:
-    MOV EAX, POS_RIGHT
-    MOV EDX, POS_UP
+    MOV EAX, MOV_RIGHT
+    MOV EDX, MOV_UP
     RET
 
   @@right:
-    MOV EAX, POS_RIGHT
-    MOV EDX, POS_SAME
+    MOV EAX, MOV_RIGHT
+    MOV EDX, MOV_NONE
     RET
 
   @@down_right:
-    MOV EAX, POS_RIGHT
-    MOV EDX, POS_DOWN
+    MOV EAX, MOV_RIGHT
+    MOV EDX, MOV_DOWN
     RET
 
   @@down:
-    MOV EAX, POS_SAME
-    MOV EDX, POS_DOWN
+    MOV EAX, MOV_NONE
+    MOV EDX, MOV_DOWN
     RET
 
   @@down_left:
-    MOV EAX, POS_LEFT
-    MOV EDX, POS_DOWN
+    MOV EAX, MOV_LEFT
+    MOV EDX, MOV_DOWN
     RET
 
   @@left:
-    MOV EAX, POS_LEFT
-    MOV EDX, POS_SAME
+    MOV EAX, MOV_LEFT
+    MOV EDX, MOV_NONE
     RET
 
   @@up_left:
-    MOV EAX, POS_LEFT
-    MOV EDX, POS_UP
+    MOV EAX, MOV_LEFT
+    MOV EDX, MOV_UP
     RET
 
   ENDP directionNext
 
 PROC opositeDirection
   ARG @@direction
-  CMP [@@direction], UP
-  JE @@down
-  CMP [@@direction], UP_RIGHT
-  JE @@down_left
-  CMP [@@direction], RIGHT 
-  JE @@left
-  CMP [@@direction], DOWN_RIGHT 
-  JE @@up_left
-  CMP [@@direction], DOWN
-  JE @@up
-  CMP [@@direction], DOWN_LEFT
-  JE @@up_right
-  CMP [@@direction], LEFT
-  JE @@right
-  CMP [@@direction], UP_LEFT
-  JE @@down_right
+  USES EAX, EBX
 
-  @@up:
-    MOV EDX, UP
-    RET
+    MOV EBX, 8 ; 8 different directions
+    MOV EAX, [@@direction]
+    ADD EAX, 4
+    XOR EDX, EDX
+    DIV EBX
 
-  @@up_right:
-    MOV EDX, UP_RIGHT
-    RET
-
-  @@right:
-    MOV EDX, RIGHT
-    RET
-
-  @@down_right:
-    MOV EDX, DOWN_RIGHT
-    RET
-
-  @@down:
-    MOV EDX, DOWN
-    RET
-
-  @@down_left:
-    MOV EDX, DOWN_LEFT
-    RET
-
-  @@left:
-    MOV EDX, LEFT
-    RET
-
-  @@up_left:
-    MOV EDX, UP_LEFT
-    RET
-
-  ENDP opositeDirection
+  RET
+ENDP opositeDirection
 
 ;-----------------------------------------------------------
 ; DATA
