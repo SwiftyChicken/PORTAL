@@ -6,16 +6,24 @@ x86 assembly remake of Portal Prelude on the TI-84
 or
 
 You can play a live demo of the game [here](https://swiftychicken.github.io/PORTAL/)
-## TO DO 
-- [ ] Optimization
-- [ ] Code clean up
-- [ ] Add Level 5 -> 10
-    - [ ] Box
-        - [ ] Box Spwaner
-        - [ ] Box pickable
-    - [ ] Presure Buttons
-        - [ ] Pressed and unpressed state
-        - [ ] Open dedicated Door
-    - [ ] Sliding Doors
-        - [ ] Opening and Closing transition animation
-        - [ ] Stop bullets when shoot on
+## CONTROLS
+### KEYBOARD CONTROLS
+| KEYS | ACTIONS |
+| ---     | ---      |
+| <kbd>←</kbd>, <kbd>↑</kbd>, <kbd>→</kbd>, <kbd>↓</kbd>| Player Movements |
+| <kbd>Q</kbd>| Shoot a portal up-left |
+| <kbd>W</kbd>| Shoot a portal up |
+| <kbd>E</kbd>| Shoot a portal up-right |
+| <kbd>D</kbd>| Shoot a portal right |
+| <kbd>C</kbd>| Shoot a portal down-right |
+| <kbd>X</kbd>| Shoot a portal down |
+| <kbd>Z</kbd>| Shoot a portal down-left |
+| <kbd>A</kbd>| Shoot a portal dleft |
+| <kbd>S</kbd>| Swap portal places |
+
+### MOBILE CONTROLS
+| BUTTONS | ACTIONS |
+| ---     | ---      |
+| Left Joystick | Portal gun controls |
+| Right Joystick | Player movement controls |
+| <kbd>⇆</kbd> | Swap portal places |
